@@ -274,9 +274,6 @@ WHERE fantasy_owner = :owner
   AND game_date BETWEEN :start AND :end
   AND dnp = FALSE
 GROUP BY player_name
-ORDER BY
-    SUBSTR(player_name, INSTR(player_name, ' ') + 1) ASC,
-    player_name ASC
 """
 # MAX(team) is used as an aggregate for team abbreviation. A player doesn't
 # change teams during the playoffs, so MAX() always returns their actual team.
