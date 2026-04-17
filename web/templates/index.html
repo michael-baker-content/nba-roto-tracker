@@ -107,12 +107,8 @@
     </div>
 
     <!-- Ad placement: 728×90 leaderboard banner (320×50 on mobile) -->
-    <div class="ad-unit ad-leaderboard" aria-label="Advertisement">
-        <img src="{{ url_for('static', filename='ad_banner.svg') }}"
-             alt=""
-             role="presentation"
-             class="ad-img ad-img-banner"
-             width="728" height="90">
+    <!-- To activate: remove the ad-hidden class and replace contents with your ad tag -->
+    <div class="ad-unit ad-leaderboard ad-hidden" aria-hidden="true">
     </div>
 
 </main>
@@ -321,8 +317,7 @@ async function loadStandings() {
         tbody.innerHTML        = desktopHtml;
         mobileCtr.innerHTML    = mobileHtml;
 
-        const gamesNote = data.games_today ? '' : ' · No games today';
-        statusMsg.textContent  = `Standings current as of ${data.today_display}${gamesNote}`;
+        statusMsg.textContent  = `Standings current as of ${data.today_display}`;
         statusDot.style.background = '#059669';
 
     } catch (err) {

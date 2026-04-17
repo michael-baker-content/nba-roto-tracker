@@ -1,8 +1,8 @@
 # nba-roto-tracker
 
-A self-hosted fantasy basketball playoff tracker with a live leaderboard, per-team roster pages, and rotisserie standings. Built with Python, Flask, and SQLite (PostgreSQL on Railway).
+A self-hosted fantasy basketball playoff tracker with a live leaderboard, per-team roster pages, and rotisserie standings. Built with Python, Flask, and SQLite (PostgreSQL in production).
 
-**Live demo:** [github.com/michael-baker-content](https://github.com/michael-baker-content)
+**Live demo:** [web-production-36aa6.up.railway.app](https://web-production-36aa6.up.railway.app/)
 
 ---
 
@@ -12,7 +12,7 @@ This project fetches NBA box score data once per day using the [nba_api](https:/
 
 **Rotisserie categories:** PTS · FG% · FT% · 3PTM · REB · AST · STL · BLK · TO
 
-Each owner is ranked 1–7 per category (7 = best, 1 = worst; TO is inverted). Total score is the sum of all category ranks. Trend indicators show movement since the last game day.
+Each owner is ranked 1 through n per category (n = best, 1 = worst; TO is inverted). Total score is the sum of all category ranks. Trend indicators show movement since the last game day.
 
 ---
 
@@ -57,7 +57,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Open `.env` and set a `SECRET_KEY`. Leave `DATABASE_URL` blank to use the local SQLite database. See [Environment variables](#environment-variables) for details.
+Open `.env` and set a `SECRET_KEY`. Leave `DATABASE_URL` blank to use the local SQLite database.
 
 ### 5. Initialise the database
 
@@ -68,7 +68,7 @@ python -m db.schema
 ### 6. Run the daily pipeline
 
 ```bash
-python main.py --date 2026-04-15
+python main.py --date YYYY-MM-DD
 ```
 
 This fetches box scores for the given date, stores game logs, and saves a standings snapshot. Run it for each game day you want to backfill.
@@ -120,14 +120,13 @@ These dates determine which game logs are included in standings calculations and
 
 ## Daily workflow
 
-Once the site is running, your daily routine is:
+After NBA games complete each evening, run the pipeline:
 
 ```bash
-# After games complete each evening
 python main.py
 ```
 
-This fetches today's box scores, updates the database, saves a standings snapshot for trend tracking, and the web app reflects the new data within 5 minutes (cache TTL).
+This fetches today's box scores, updates the database, and saves a standings snapshot for trend tracking. The web app reflects the new data within 5 minutes (cache TTL).
 
 To also export a file:
 
@@ -154,6 +153,7 @@ nba-roto-tracker/
 │
 ├── main.py                  # Daily pipeline entry point
 ├── requirements.txt
+├── runtime.txt              # Python version for hosted platforms
 ├── Procfile                 # gunicorn entry point for hosted deployment
 ├── .env.example
 ├── .gitignore
@@ -202,9 +202,10 @@ nba-roto-tracker/
 |---|---|---|
 | `SECRET_KEY` | Yes | Flask session secret. Generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `DATABASE_URL` | No | PostgreSQL connection URL. If absent, uses local `fantasy.db` (SQLite). |
+| `TZ` | No | Timezone for the server. Set to `America/Los_Angeles` (or your timezone) to ensure correct date handling. |
 | `LEAGUE_START` | No | Overrides the default in `settings.py`. Format: `YYYY-MM-DD`. |
 | `LEAGUE_END` | No | Overrides the default in `settings.py`. Format: `YYYY-MM-DD`. |
-| `TZ` | No | Timezone for the server. Set to `America/Los_Angeles` (or your timezone) on Railway to ensure correct date handling. |
+| `INIT_DB` | No | Set to `1` on first deploy to auto-create database tables on startup. Remove after the first successful deployment. |
 
 ---
 
@@ -229,51 +230,58 @@ git push -u origin main
 
 ### Recommended platforms
 
-**Railway** ([railway.app](https://railway.app)) — the simplest option. Connect your GitHub repo, add a PostgreSQL plugin, and Railway detects the `Procfile` automatically. Add a second Cron Job service pointing to the same repo with the command `python main.py` and a schedule like `0 4 * * *` (4 AM UTC). Free tier available.
+**Railway** ([railway.app](https://railway.app)) — connect your GitHub repo and add a PostgreSQL database plugin. Railway sets `DATABASE_URL` automatically. Note the following Railway-specific steps:
 
-**Render** ([render.com](https://render.com)) — similar to Railway. Create a Web Service from your repo and a separate Cron Job service. Managed PostgreSQL available as an add-on.
+- Add a `runtime.txt` file to your repo containing `python-3.11` so Railway detects the correct Python version
+- In your service settings, set the **Start Command** explicitly to `python -m gunicorn web.app:app` — Railway's auto-detection may not find gunicorn in the virtualenv path
+- Make sure `gunicorn` is listed in `requirements.txt`
+- For the daily pipeline, add a second **Cron Job** service pointing to the same repo with start command `python main.py` and schedule `0 9 * * *` (9 AM UTC / 1 AM PT — after west coast games finish)
 
-**Heroku** ([heroku.com](https://heroku.com)) — the established option with extensive documentation. Use the `Heroku Postgres` add-on and the `Heroku Scheduler` add-on for the daily pipeline. No free tier.
+**Render** ([render.com](https://render.com)) — create a Web Service from your repo and a separate Cron Job service. Managed PostgreSQL available as an add-on.
 
-**VPS (DigitalOcean, Linode, etc.)** — full control. Run gunicorn behind nginx, use PostgreSQL installed on the server, and schedule `main.py` with a system cron job.
+**Heroku** ([heroku.com](https://heroku.com)) — use the `Heroku Postgres` add-on and the `Heroku Scheduler` add-on for the daily pipeline. No free tier.
+
+**VPS (DigitalOcean, Linode, etc.)** — run gunicorn behind nginx, use PostgreSQL installed on the server, and schedule `main.py` with a system cron job.
 
 ### What every deployment needs
 
-Regardless of platform, you will need to:
-
 **1. Set environment variables**
 
-| Key | Value |
-|---|---|
-| `SECRET_KEY` | A long random string — generate with `python -c "import secrets; print(secrets.token_hex(32))"` |
-| `DATABASE_URL` | Your PostgreSQL connection URL (set automatically by most platforms) |
-| `TZ` | Your timezone, e.g. `America/Los_Angeles` — ensures correct date handling |
+Set `SECRET_KEY`, `DATABASE_URL`, and `TZ` in your platform's environment settings. See the [Environment variables](#environment-variables) table above for details.
 
 **2. Initialise the database**
 
-Run once after the platform provisions your PostgreSQL instance:
+If your platform provides a shell, run:
 
 ```bash
 python -m db.schema
 ```
 
+If no shell is available (e.g. Railway free tier), add `INIT_DB=1` as an environment variable before your first deploy. The app will create the tables automatically on startup. Remove this variable after the first successful deployment.
+
 **3. Backfill historical data**
 
-Run the pipeline for each game day since your league started:
+Run the pipeline from your local machine with `DATABASE_URL` pointed at your production database. You will need `psycopg2-binary` installed locally:
 
 ```bash
-python main.py --date 2026-04-14
-python main.py --date 2026-04-15
-# ... and so on for each game day
+pip install psycopg2-binary
+```
+
+Then, with your production `DATABASE_URL` set as an environment variable:
+
+```bash
+# macOS / Linux
+export DATABASE_URL="postgresql://..."
+
+# Windows PowerShell
+$env:DATABASE_URL="postgresql://..."
+
+python main.py --date YYYY-MM-DD   # repeat for each game day
 ```
 
 **4. Schedule the daily pipeline**
 
-The pipeline should run once per day after NBA games typically finish. A cron expression of `0 4 * * *` (4 AM UTC) covers most game nights for US timezones. The command is simply:
-
-```bash
-python main.py
-```
+The pipeline should run once per day after NBA games typically finish. For US leagues, `0 9 * * *` (9 AM UTC / 1 AM PT) is recommended — this gives enough time for late west coast games to finish and for final box scores to be available on the NBA API.
 
 ### A note on the NBA API
 

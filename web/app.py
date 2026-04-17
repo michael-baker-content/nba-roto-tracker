@@ -22,7 +22,6 @@ from db.queries import (
     get_season_owner_game_logs,
     get_season_owner_player_totals,
     get_last_updated,
-    get_games_today,
     get_trends,
 )
 
@@ -97,7 +96,6 @@ def _today_fields() -> dict:
         "today_display": today.strftime("%b %d, %Y").replace(" 0", " "),
         "last_updated":  get_last_updated(),
         "server_time":   datetime.now().strftime("%I:%M %p").lstrip("0"),
-        "games_today":   get_games_today(),
     }
 
 

@@ -89,12 +89,8 @@
     </div>
 
     <!-- Ad placement: 300×250 medium rectangle -->
-    <div class="ad-unit ad-rectangle" aria-label="Advertisement">
-        <img src="{{ url_for('static', filename='ad_rectangle.svg') }}"
-             alt=""
-             role="presentation"
-             class="ad-img"
-             width="300" height="250">
+    <!-- To activate: remove the ad-hidden class and replace contents with your ad tag -->
+    <div class="ad-unit ad-rectangle ad-hidden" aria-hidden="true">
     </div>
 
     <!-- Game log -->
@@ -276,8 +272,7 @@ async function loadOwnerData() {
             ? '<tr><td colspan="20" class="state-msg">No games played yet.</td></tr>'
             : data.game_logs.map(buildLogRow).join('');
 
-        const gamesNote = data.games_today ? '' : ' · No games today';
-        statusMsg.textContent = `Data current as of ${data.today_display}${gamesNote}`;
+        statusMsg.textContent = `Data current as of ${data.today_display}`;
         statusDot.style.background = '#059669';
 
     } catch (err) {

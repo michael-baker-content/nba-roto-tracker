@@ -675,6 +675,13 @@ header {
     margin: 1.5rem auto;
 }
 
+/* To activate ads: remove the .ad-hidden class from the ad-unit divs
+   in index.html and owner.html. The SVG placeholders will then be visible,
+   ready to be swapped for real ad network tags. */
+.ad-hidden {
+    display: none;
+}
+
 /* Site footer ── simplified */
 .site-footer-inner {
     justify-content: flex-end;
