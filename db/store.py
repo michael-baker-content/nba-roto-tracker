@@ -117,8 +117,9 @@ def save_game_logs(df: pd.DataFrame, game_date: date, game_id: str):
         for pct in ("fg_pct", "fg3_pct", "ft_pct"):
             if record[pct] is not None:
                 record[pct] = float(record[pct])
-        # Ensure dnp is stored as int (SQLite has no native boolean)
-        record["dnp"] = int(bool(record.get("dnp", False)))
+        # Store dnp as bool — psycopg2 maps Python bool to PostgreSQL boolean,
+        # and SQLite stores True/False as 1/0 automatically.
+        record["dnp"] = bool(record.get("dnp", False))
         rows.append(record)
 
     if not rows:
@@ -127,11 +128,7 @@ def save_game_logs(df: pd.DataFrame, game_date: date, game_id: str):
     sql = _SQLITE_UPSERT if _is_sqlite() else _PG_UPSERT
 
     with get_connection() as conn:
-        if _is_sqlite():
-            conn.executemany(sql, rows)
-        else:
-            cursor = conn.cursor()
-            cursor.executemany(sql, rows)
+        conn.executemany(sql, rows)
         conn.commit()
 
     print(f"   💾  Saved {len(rows)} row(s) to database for game {game_id}.")
@@ -176,11 +173,7 @@ def save_standings_snapshot(standings: list[dict], snapshot_date: "date"):
     sql = _SQLITE_SNAPSHOT if _is_sqlite() else _PG_SNAPSHOT
 
     with get_connection() as conn:
-        if _is_sqlite():
-            conn.executemany(sql, rows)
-        else:
-            cursor = conn.cursor()
-            cursor.executemany(sql, rows)
+        conn.executemany(sql, rows)
         conn.commit()
 
     print(f"   📸  Saved standings snapshot for {snapshot_date}.")
