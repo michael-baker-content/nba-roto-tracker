@@ -56,7 +56,7 @@ ROSTER = [
     {"Fantasy_Owner": "Michael", "PLAYER": "Evan Mobley",             "PLAYER_ID": 1630596},
     {"Fantasy_Owner": "Michael", "PLAYER": "Jayson Tatum",            "PLAYER_ID": 1628369},
     {"Fantasy_Owner": "Michael", "PLAYER": "Kon Knueppel",            "PLAYER_ID": 1642851},
-    {"Fantasy_Owner": "Michael", "PLAYER": "Lonzo Ball",              "PLAYER_ID": 1628366},
+    {"Fantasy_Owner": "Michael", "PLAYER": "LaMelo Ball", "PLAYER_ID": 1630163},
     {"Fantasy_Owner": "Michael", "PLAYER": "Moussa Diabaté",          "PLAYER_ID": 1631217},
     {"Fantasy_Owner": "Michael", "PLAYER": "Naz Reid",                "PLAYER_ID": 1629675},
     {"Fantasy_Owner": "Michael", "PLAYER": "Onyeka Okongwu",          "PLAYER_ID": 1630168},
