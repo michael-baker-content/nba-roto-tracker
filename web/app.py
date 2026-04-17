@@ -29,6 +29,15 @@ from db.queries import (
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 
+# ── One-time database initialisation ─────────────────────────────────────────
+# Set INIT_DB=1 in environment variables to run schema creation on startup.
+# Remove the variable after the first successful deploy.
+import os
+if os.environ.get("INIT_DB") == "1":
+    from db.schema import init_db, migrate_db
+    init_db()
+    migrate_db()
+
 # ── Cache configuration ───────────────────────────────────────────────────────
 # SimpleCache works for a single-process server (local dev + single Railway dyno).
 # Upgrade to RedisCache if multiple dynos are ever needed.
