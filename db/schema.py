@@ -30,12 +30,27 @@ class _PgConnAdapter:
     interface as SQLite, so all query code can work identically with both databases.
     psycopg2 requires going through a cursor; SQLite allows calling directly on
     the connection. This adapter bridges that gap.
+
+    Also translates SQLite-style :param placeholders to psycopg2-style %(param)s.
     """
     def __init__(self, conn):
         self._conn = conn
         self._cursor = conn.cursor()
 
+    @staticmethod
+    def _translate(sql, params):
+        """Convert :name style params to %(name)s for psycopg2."""
+        if params is None:
+            return sql, None
+        if isinstance(params, dict):
+            import re
+            sql = re.sub(r':([a-zA-Z_][a-zA-Z0-9_]*)', r'%(\1)s', sql)
+        elif isinstance(params, (list, tuple)):
+            sql = sql.replace('?', '%s')
+        return sql, params
+
     def execute(self, sql, params=None):
+        sql, params = self._translate(sql, params)
         if params is None:
             self._cursor.execute(sql)
         else:
@@ -43,6 +58,8 @@ class _PgConnAdapter:
         return self._cursor
 
     def executemany(self, sql, params_list):
+        if params_list:
+            sql, _ = self._translate(sql, params_list[0])
         self._cursor.executemany(sql, params_list)
         return self._cursor
 
