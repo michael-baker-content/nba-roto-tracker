@@ -24,18 +24,52 @@ def _sqlite_path() -> str:
     return DATABASE_URL.split("sqlite:///")[1]
 
 
+class _PgConnAdapter:
+    """
+    Wraps a psycopg2 connection to expose the same .execute() / .executemany()
+    interface as SQLite, so all query code can work identically with both databases.
+    psycopg2 requires going through a cursor; SQLite allows calling directly on
+    the connection. This adapter bridges that gap.
+    """
+    def __init__(self, conn):
+        self._conn = conn
+        self._cursor = conn.cursor()
+
+    def execute(self, sql, params=None):
+        if params is None:
+            self._cursor.execute(sql)
+        else:
+            self._cursor.execute(sql, params)
+        return self._cursor
+
+    def executemany(self, sql, params_list):
+        self._cursor.executemany(sql, params_list)
+        return self._cursor
+
+    def executescript(self, sql):
+        for statement in sql.split(';'):
+            s = statement.strip()
+            if s:
+                self._cursor.execute(s)
+
+    def commit(self):
+        self._conn.commit()
+
+    def close(self):
+        self._cursor.close()
+        self._conn.close()
+
+
 @contextmanager
 def get_connection():
     """
     Yield a database connection for either SQLite or PostgreSQL.
-    Usage:
-        with get_connection() as conn:
-            conn.execute(...)
-            conn.commit()
+    Both yield an object supporting .execute(), .executemany(), and .commit()
+    so all query code works identically regardless of the backend.
     """
     if _is_sqlite():
         conn = sqlite3.connect(_sqlite_path())
-        conn.row_factory = sqlite3.Row   # rows accessible by column name
+        conn.row_factory = sqlite3.Row
         try:
             yield conn
         finally:
@@ -50,10 +84,11 @@ def get_connection():
                 "Install it with: pip install psycopg2-binary"
             )
         conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+        adapter = _PgConnAdapter(conn)
         try:
-            yield conn
+            yield adapter
         finally:
-            conn.close()
+            adapter.close()
 
 
 # ── DDL ───────────────────────────────────────────────────────────────────────
