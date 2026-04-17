@@ -40,7 +40,6 @@ def client():
     with patch("db.queries.get_season_standings",    return_value=MOCK_STANDINGS), \
          patch("db.queries.get_season_stat_totals",  return_value=[]), \
          patch("db.queries.get_last_updated",        return_value="Apr 15, 2026"), \
-         patch("db.queries.get_games_today",         return_value=False), \
          patch("db.queries.get_trends",              return_value={"Aaron": "up"}), \
          patch("db.queries.get_season_owner_player_totals", return_value=MOCK_TOTALS), \
          patch("db.queries.get_season_owner_game_logs",     return_value=MOCK_LOGS):
@@ -86,7 +85,7 @@ class TestAPIRoutes:
     def test_standings_response_has_required_keys(self, client):
         data = client.get("/api/standings").get_json()
         for key in ("standings", "as_of", "today_display", "last_updated",
-                    "server_time", "games_today"):
+                    "server_time"):
             assert key in data, f"Missing key: {key}"
 
     def test_standings_contains_owners(self, client):
@@ -109,7 +108,7 @@ class TestAPIRoutes:
     def test_owner_api_has_required_keys(self, client):
         data = client.get("/api/owner/Aaron").get_json()
         for key in ("owner", "player_totals", "game_logs",
-                    "today_display", "last_updated", "games_today"):
+                    "today_display", "last_updated"):
             assert key in data, f"Missing key: {key}"
 
     def test_owner_api_player_totals_have_stat_fields(self, client):
