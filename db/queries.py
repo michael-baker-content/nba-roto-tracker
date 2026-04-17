@@ -53,7 +53,7 @@ SELECT
 FROM game_logs
 WHERE fantasy_owner IN ({placeholders})
   AND game_date BETWEEN :start AND :end
-  AND dnp = 0
+  AND dnp = FALSE
 GROUP BY fantasy_owner
 """
 # Note: dnp=0 excludes did-not-play rows from all aggregate calculations.
@@ -272,7 +272,7 @@ SELECT
 FROM game_logs
 WHERE fantasy_owner = :owner
   AND game_date BETWEEN :start AND :end
-  AND dnp = 0
+  AND dnp = FALSE
 GROUP BY player_name
 ORDER BY
     SUBSTR(player_name, INSTR(player_name, ' ') + 1) ASC,
