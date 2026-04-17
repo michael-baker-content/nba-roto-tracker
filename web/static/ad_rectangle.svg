@@ -1,0 +1,46 @@
+<svg width="300" height="250" viewBox="0 0 300 250" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>Advertisement placeholder — 300×250 medium rectangle</title>
+  <desc>Decorative basketball hexagonal tile pattern</desc>
+
+  <rect width="300" height="250" fill="#0f172a"/>
+
+  <polygon points="50,10 80,10 95,36 80,62 50,62 35,36" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="110,10 140,10 155,36 140,62 110,62 95,36" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="170,10 200,10 215,36 200,62 170,62 155,36" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="230,10 260,10 275,36 260,62 230,62 215,36" fill="none" stroke="#1e293b" stroke-width="1"/>
+
+  <polygon points="20,62 50,62 65,88 50,114 20,114 5,88" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="80,62 110,62 125,88 110,114 80,114 65,88" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="140,62 170,62 185,88 170,114 140,114 125,88" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="200,62 230,62 245,88 230,114 200,114 185,88" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="260,62 290,62 305,88 290,114 260,114 245,88" fill="none" stroke="#1e293b" stroke-width="1"/>
+
+  <polygon points="50,114 80,114 95,140 80,166 50,166 35,140" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="110,114 140,114 155,140 140,166 110,166 95,140" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="170,114 200,114 215,140 200,166 170,166 155,140" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="230,114 260,114 275,140 260,166 230,166 215,140" fill="none" stroke="#1e293b" stroke-width="1"/>
+
+  <polygon points="20,166 50,166 65,192 50,218 20,218 5,192" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="80,166 110,166 125,192 110,218 80,218 65,192" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="140,166 170,166 185,192 170,218 140,218 125,192" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="200,166 230,166 245,192 230,218 200,218 185,192" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <polygon points="260,166 290,166 305,192 290,218 260,218 245,192" fill="none" stroke="#1e293b" stroke-width="1"/>
+
+  <polygon points="110,10 140,10 155,36 140,62 110,62 95,36" fill="#f59e0b" opacity="0.12"/>
+  <polygon points="140,62 170,62 185,88 170,114 140,114 125,88" fill="#f59e0b" opacity="0.12"/>
+  <polygon points="80,114 110,114 125,140 110,166 80,166 65,140" fill="#f59e0b" opacity="0.12"/>
+  <polygon points="170,114 200,114 215,140 200,166 170,166 155,140" fill="#f59e0b" opacity="0.12"/>
+  <polygon points="110,166 140,166 155,192 140,218 110,218 95,192" fill="#f59e0b" opacity="0.12"/>
+
+  <circle cx="150" cy="125" r="38" fill="#f59e0b"/>
+  <path d="M112,125 Q128,96 150,88 Q172,96 188,125" fill="none" stroke="#92400e" stroke-width="2"/>
+  <path d="M112,125 Q128,154 150,162 Q172,154 188,125" fill="none" stroke="#92400e" stroke-width="2"/>
+  <line x1="112" y1="125" x2="188" y2="125" stroke="#92400e" stroke-width="2"/>
+  <line x1="150" y1="87" x2="150" y2="163" stroke="#92400e" stroke-width="2"/>
+  <circle cx="150" cy="125" r="38" fill="none" stroke="#b45309" stroke-width="1.5"/>
+
+  <rect x="60" y="176" width="180" height="52" rx="6" fill="#0f172a" opacity="0.85"/>
+  <text x="150" y="197" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="10" font-weight="600" letter-spacing="0.1em" fill="#334155">ADVERTISEMENT</text>
+  <text x="150" y="213" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13" fill="#475569">300 × 250</text>
+  <text x="150" y="226" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="10" fill="#334155">IAB Medium Rectangle</text>
+</svg>

@@ -1,0 +1,10 @@
+*.db
+*.pyc
+__pycache__/
+.env
+*.xlsx
+*.csv
+*.json
+fantasy_gamelogs_*
+.venv/
+venv/

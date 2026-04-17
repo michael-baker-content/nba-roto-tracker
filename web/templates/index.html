@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Basketball Standings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <div class="header-left">
+            <a href="/" class="site-logo" aria-label="Fantasy Basketball Playoffs home">
+                <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                    <circle cx="18" cy="18" r="16" fill="#f59e0b" stroke="#fcd34d" stroke-width="1.5"/>
+                    <path d="M18 2C18 2 18 34 18 34" stroke="#92400e" stroke-width="1.5"/>
+                    <path d="M2 18C2 18 34 18 34 18" stroke="#92400e" stroke-width="1.5"/>
+                    <path d="M7 7C7 7 13 14 13 18C13 22 7 29 7 29" stroke="#92400e" stroke-width="1.5" fill="none"/>
+                    <path d="M29 7C29 7 23 14 23 18C23 22 29 29 29 29" stroke="#92400e" stroke-width="1.5" fill="none"/>
+                    <circle cx="18" cy="18" r="16" stroke="#b45309" stroke-width="1.5" fill="none"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="header-title">Fantasy Basketball Playoffs</h1>
+                <p class="header-subtitle">Rotisserie standings &nbsp;·&nbsp; {{ league_start }} – {{ league_end }}</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="header-meta">
+                <div>Days elapsed <strong>{{ days_elapsed }}</strong></div>
+                <div>Days remaining <strong>{{ days_remaining }}</strong></div>
+            </div>
+            <button class="theme-toggle" id="theme-toggle"
+                    aria-label="Switch to dark mode"
+                    aria-pressed="false"
+                    title="Toggle dark mode">
+                <svg id="icon-sun" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                     aria-hidden="true" focusable="false" style="display:none;">
+                    <path d="M12 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 12 4.5zm0 13.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75zM4.5 12a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5A.75.75 0 0 1 4.5 12zm13.5 0a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75zM6.697 7.757a.75.75 0 0 1 1.06-1.06l1.061 1.06a.75.75 0 1 1-1.06 1.061L6.697 7.757zm9.545 9.546a.75.75 0 0 1 1.06-1.06l1.062 1.06a.75.75 0 0 1-1.061 1.061l-1.061-1.061zM7.757 17.303a.75.75 0 0 1-1.06-1.06l1.06-1.062a.75.75 0 0 1 1.061 1.061l-1.061 1.061zm9.546-9.546a.75.75 0 0 1-1.06-1.06l1.06-1.061a.75.75 0 0 1 1.061 1.06l-1.061 1.061zM12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5z"/>
+                </svg>
+                <svg id="icon-moon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                     aria-hidden="true" focusable="false">
+                    <path d="M21.752 15.002A9.718 9.718 0 0 1 18 15.75 9.75 9.75 0 0 1 8.25 6c0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 2.25 12a9.75 9.75 0 0 0 9.75 9.75c4.496 0 8.303-3.04 9.252-7.748z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="page-wrap">
+
+    <div class="status-bar">
+        <div class="status-dot" id="status-dot" aria-hidden="true"></div>
+        <span id="status-msg" aria-live="polite" aria-atomic="true">Loading standings…</span>
+    </div>
+
+    <h2 class="section-heading">Leaderboard</h2>
+
+    <div class="legend desktop-only" aria-label="Score colour legend">
+        <div class="legend-item">
+            <div class="legend-dot" id="legend-high" aria-hidden="true"></div>
+            Top score in category
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" id="legend-low" aria-hidden="true"></div>
+            Bottom score in category
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" id="legend-mid" aria-hidden="true"></div>
+            Mid-range score
+        </div>
+    </div>
+
+    <!-- Desktop: full table -->
+    <div class="table-wrap desktop-only">
+        <table class="leaderboard" id="leaderboard">
+            <caption class="sr-only">Fantasy basketball rotisserie standings — rank, owner, total score and per-category points</caption>
+            <thead>
+                <tr>
+                    <th class="col-left" style="width:44px;" scope="col">Rank</th>
+                    <th class="col-left" style="width:110px;" scope="col">Owner</th>
+                    <th style="width:64px;" scope="col">Score</th>
+                    {% for cat in categories %}
+                    <th scope="col">{{ cat.label }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody id="standings-body">
+                <tr>
+                    <td colspan="{{ 3 + categories|length }}" class="state-msg">Loading…</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile: card list -->
+    <div class="mobile-only" id="mobile-standings"
+         role="region" aria-label="Leaderboard" aria-live="polite">
+        <div class="state-msg">Loading…</div>
+    </div>
+
+    <!-- Ad placement: 728×90 leaderboard banner (320×50 on mobile) -->
+    <div class="ad-unit ad-leaderboard" aria-label="Advertisement">
+        <img src="{{ url_for('static', filename='ad_banner.svg') }}"
+             alt=""
+             role="presentation"
+             class="ad-img ad-img-banner"
+             width="728" height="90">
+    </div>
+
+</main>
+
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span class="footer-updated">Data through <span id="as-of">—</span></span>
+    </div>
+</footer>
+
+<script>
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+const root      = document.documentElement;
+const toggleBtn = document.getElementById('theme-toggle');
+const iconSun   = document.getElementById('icon-sun');
+const iconMoon  = document.getElementById('icon-moon');
+
+function applyTheme(theme, animate) {
+    if (animate) {
+        const rect = toggleBtn.getBoundingClientRect();
+        const x = Math.round(rect.left + rect.width  / 2);
+        const y = Math.round(rect.top  + rect.height / 2);
+        root.style.setProperty('--reveal-x', `${x}px`);
+        root.style.setProperty('--reveal-y', `${y}px`);
+        document.body.classList.remove('theme-revealing');
+        void document.body.offsetWidth;
+        document.body.classList.add('theme-revealing');
+        // Defer the theme switch by one frame so the browser can commit
+        // the animation start before the repaint triggered by data-theme change.
+        requestAnimationFrame(() => {
+            root.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            const isDark = theme === 'dark';
+            iconSun.style.display  = isDark  ? 'block' : 'none';
+            iconMoon.style.display = !isDark ? 'block' : 'none';
+            toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+            toggleBtn.setAttribute('aria-pressed', String(isDark));
+            updateLegendDots(theme);
+        });
+        document.body.addEventListener('animationend', () => {
+            document.body.classList.remove('theme-revealing');
+        }, { once: true });
+        return;
+    }
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    const isDark = theme === 'dark';
+    iconSun.style.display  = isDark  ? 'block' : 'none';
+    iconMoon.style.display = !isDark ? 'block' : 'none';
+    toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    toggleBtn.setAttribute('aria-pressed', String(isDark));
+    updateLegendDots(theme);
+}
+
+function updateLegendDots(theme) {
+    const dark = theme === 'dark';
+    const h = document.getElementById('legend-high');
+    const l = document.getElementById('legend-low');
+    const m = document.getElementById('legend-mid');
+    if (h) h.style.cssText = `background:${dark?'#052e16':'#bbf7d0'};border:1px solid ${dark?'#34d399':'#059669'};`;
+    if (l) l.style.cssText = `background:${dark?'#2d0a0a':'#fecaca'};border:1px solid ${dark?'#f87171':'#dc2626'};`;
+    if (m) m.style.cssText = `background:${dark?'#1e293b':'#d4dce5'};border:1px solid ${dark?'#334155':'#94a3b8'};`;
+}
+
+toggleBtn.addEventListener('click', () => {
+    applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+});
+
+applyTheme(root.getAttribute('data-theme') || 'light', false);
+
+// ── Standings ─────────────────────────────────────────────────────────────────
+const CAT_COLS = {{ categories | tojson }};
+
+function ptsBadgeClass(pts, allPts) {
+    const max = Math.max(...allPts);
+    const min = Math.min(...allPts);
+    if (pts >= max) return 'pts-high';
+    if (pts <= min) return 'pts-low';
+    return 'pts-mid';
+}
+
+function placeClass(place) {
+    if (place === 1) return 'place place-1';
+    if (place === 2) return 'place place-2';
+    if (place === 3) return 'place place-3';
+    return 'place place-n';
+}
+
+function getRankVal(row, col) { return row[col + '_rank']; }
+
+function trendBadge(trend) {
+    if (trend === 'up')   return '<span class="trend trend-up"   aria-label="Moving up">▲</span>';
+    if (trend === 'down') return '<span class="trend trend-down" aria-label="Moving down">▼</span>';
+    return '';
+}
+
+function buildDesktopRow(row, allRanksByCol, active) {
+    const place = row.place;
+    let html = `<tr class="${active ? '' : 'inactive'}">`;
+    html += `<td class="col-left"><span class="${placeClass(place)}" aria-label="Place ${place}">${place}</span></td>`;
+    html += `<td class="col-left"><a class="owner-link" href="/owner/${row.fantasy_owner}">${row.fantasy_owner}</a></td>`;
+    html += `<td><span class="score">${row.total_score}</span>${trendBadge(row.trend)}</td>`;
+
+    CAT_COLS.forEach(cat => {
+        const col = cat.col;
+        const pts = getRankVal(row, col);
+        const badgeClass = active ? ptsBadgeClass(pts, allRanksByCol[col]) : 'pts-none';
+        let valStr;
+        if (!active)             valStr = '<span class="dash" aria-label="No data">—</span>';
+        else if (col==='FG_PCT') valStr = row.fg_pct.toFixed(1) + '%';
+        else if (col==='FT_PCT') valStr = row.ft_pct.toFixed(1) + '%';
+        else { const k=col.toLowerCase(); valStr = row[k]!==undefined ? row[k] : '—'; }
+        html += `<td><div class="cat-cell">
+            <span class="cat-val">${valStr}</span>
+            <span class="cat-pts ${badgeClass}">${active ? pts : '—'}</span>
+        </div></td>`;
+    });
+
+    html += '</tr>';
+    return html;
+}
+
+function buildMobileCard(row, allRanksByCol, active, idx) {
+    const place = row.place;
+    const detailId = `detail-${idx}`;
+
+    let catGrid = '';
+    CAT_COLS.forEach(cat => {
+        const col = cat.col;
+        const pts = getRankVal(row, col);
+        const badgeClass = active ? ptsBadgeClass(pts, allRanksByCol[col]) : 'pts-none';
+        let valStr;
+        if (!active)             valStr = '—';
+        else if (col==='FG_PCT') valStr = row.fg_pct.toFixed(1) + '%';
+        else if (col==='FT_PCT') valStr = row.ft_pct.toFixed(1) + '%';
+        else { const k=col.toLowerCase(); valStr = row[k]!==undefined ? row[k] : '—'; }
+
+        catGrid += `
+            <div class="mob-cat-item">
+                <span class="mob-cat-label">${cat.label}</span>
+                <span class="mob-cat-val">${valStr}</span>
+                <span class="cat-pts ${badgeClass}" style="margin-top:2px;">${active ? pts : '—'}</span>
+            </div>`;
+    });
+
+    return `
+    <div class="mob-card ${active ? '' : 'inactive'}" id="card-${idx}">
+        <button class="mob-card-header" onclick="toggleCard(${idx})"
+                aria-expanded="false" aria-controls="${detailId}"
+                aria-label="View category breakdown for ${row.fantasy_owner}">
+            <span class="${placeClass(place)}" aria-label="Place ${place}">${place}</span>
+            <a class="owner-link mob-owner" href="/owner/${row.fantasy_owner}"
+               onclick="event.stopPropagation();">${row.fantasy_owner}</a>
+            <span class="mob-score" aria-label="Score ${row.total_score}">${row.total_score}</span>
+            ${trendBadge(row.trend)}
+            <svg class="mob-chevron" viewBox="0 0 20 20" fill="currentColor"
+                 aria-hidden="true" focusable="false">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
+            </svg>
+        </button>
+        <div class="mob-detail" id="${detailId}" hidden>
+            <div class="mob-cat-grid">${catGrid}</div>
+            <a class="mob-detail-link" href="/owner/${row.fantasy_owner}">View full roster →</a>
+        </div>
+    </div>`;
+}
+
+function toggleCard(idx) {
+    const detail  = document.getElementById(`detail-${idx}`);
+    const btn     = document.querySelector(`#card-${idx} .mob-card-header`);
+    const chevron = btn.querySelector('.mob-chevron');
+    const isOpen  = !detail.hidden;
+    detail.hidden            = isOpen;
+    chevron.style.transform  = isOpen ? '' : 'rotate(180deg)';
+    btn.setAttribute('aria-expanded', String(!isOpen));
+}
+
+async function loadStandings() {
+    const tbody     = document.getElementById('standings-body');
+    const mobileCtr = document.getElementById('mobile-standings');
+    const statusMsg = document.getElementById('status-msg');
+    const statusDot = document.getElementById('status-dot');
+
+    try {
+        const resp = await fetch('/api/standings');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        document.getElementById('as-of').textContent = `${data.today_display} at ${data.server_time}`;
+        const standings = data.standings;
+
+        const allRanksByCol = {};
+        CAT_COLS.forEach(cat => {
+            allRanksByCol[cat.col] = standings.map(r => getRankVal(r, cat.col));
+        });
+
+        let desktopHtml = '';
+        let mobileHtml  = '';
+
+        standings.forEach((row, idx) => {
+            const active = (row.pts > 0 || row.fg3m > 0 || row.reb > 0 || row.ast > 0 || row.to_ > 0);
+            desktopHtml += buildDesktopRow(row, allRanksByCol, active);
+            mobileHtml  += buildMobileCard(row, allRanksByCol, active, idx);
+        });
+
+        tbody.innerHTML        = desktopHtml;
+        mobileCtr.innerHTML    = mobileHtml;
+
+        const gamesNote = data.games_today ? '' : ' · No games today';
+        statusMsg.textContent  = `Standings current as of ${data.today_display}${gamesNote}`;
+        statusDot.style.background = '#059669';
+
+    } catch (err) {
+        const msg = `Failed to load standings.<br><small style="color:#94a3b8;">${err.message}</small>`;
+        tbody.innerHTML     = `<tr><td colspan="${3+CAT_COLS.length}" class="state-msg">${msg}</td></tr>`;
+        mobileCtr.innerHTML = `<div class="state-msg">${msg}</div>`;
+        statusMsg.textContent = 'Could not load standings';
+        statusDot.style.background = '#dc2626';
+    }
+}
+
+// ── Table scroll state ────────────────────────────────────────────────────────
+// Remove right-side border-radius when the table is wider than its wrapper
+// so the corner matches the square bottom-right corner created by the scrollbar.
+function updateTableScrollState() {
+    document.querySelectorAll('.table-wrap').forEach(wrap => {
+        wrap.classList.toggle('is-scrollable', wrap.scrollWidth > wrap.clientWidth);
+    });
+}
+updateTableScrollState();
+window.addEventListener('resize', updateTableScrollState);
+
+loadStandings();
+setInterval(loadStandings, 60 * 1000);
+</script>
+
+</body>
+</html>

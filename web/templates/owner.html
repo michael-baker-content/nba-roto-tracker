@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team {{ owner }} – Fantasy Basketball</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <div class="header-left">
+            <a href="/" class="site-logo" aria-label="Fantasy Basketball Playoffs home">
+                <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"
+                     aria-hidden="true" focusable="false">
+                    <circle cx="18" cy="18" r="16" fill="#f59e0b" stroke="#fcd34d" stroke-width="1.5"/>
+                    <path d="M18 2C18 2 18 34 18 34" stroke="#92400e" stroke-width="1.5"/>
+                    <path d="M2 18C2 18 34 18 34 18" stroke="#92400e" stroke-width="1.5"/>
+                    <path d="M7 7C7 7 13 14 13 18C13 22 7 29 7 29" stroke="#92400e" stroke-width="1.5" fill="none"/>
+                    <path d="M29 7C29 7 23 14 23 18C23 22 29 29 29 29" stroke="#92400e" stroke-width="1.5" fill="none"/>
+                    <circle cx="18" cy="18" r="16" stroke="#b45309" stroke-width="1.5" fill="none"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="header-title">Team {{ owner }}</h1>
+                <p class="header-subtitle">
+                    {{ place_str }} place &nbsp;·&nbsp; {{ score }} pts &nbsp;·&nbsp;
+                    <a href="/" class="back-link">← Leaderboard</a>
+                </p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="header-meta">
+                <div>Days elapsed <strong>{{ days_elapsed }}</strong></div>
+                <div>Days remaining <strong>{{ days_remaining }}</strong></div>
+            </div>
+            <button class="theme-toggle" id="theme-toggle"
+                    aria-label="Switch to dark mode"
+                    aria-pressed="false">
+                <svg id="icon-sun" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                     aria-hidden="true" focusable="false" style="display:none;">
+                    <path d="M12 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 12 4.5zm0 13.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75zM4.5 12a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5A.75.75 0 0 1 4.5 12zm13.5 0a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75zM6.697 7.757a.75.75 0 0 1 1.06-1.06l1.061 1.06a.75.75 0 1 1-1.06 1.061L6.697 7.757zm9.545 9.546a.75.75 0 0 1 1.06-1.06l1.062 1.06a.75.75 0 0 1-1.061 1.061l-1.061-1.061zM7.757 17.303a.75.75 0 0 1-1.06-1.06l1.06-1.062a.75.75 0 0 1 1.061 1.061l-1.061 1.061zm9.546-9.546a.75.75 0 0 1-1.06-1.06l1.06-1.061a.75.75 0 0 1 1.061 1.06l-1.061 1.061zM12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5z"/>
+                </svg>
+                <svg id="icon-moon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                     aria-hidden="true" focusable="false">
+                    <path d="M21.752 15.002A9.718 9.718 0 0 1 18 15.75 9.75 9.75 0 0 1 8.25 6c0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 2.25 12a9.75 9.75 0 0 0 9.75 9.75c4.496 0 8.303-3.04 9.252-7.748z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="page-wrap">
+
+    <div class="status-bar">
+        <div class="status-dot" id="status-dot" aria-hidden="true"></div>
+        <span id="status-msg" aria-live="polite" aria-atomic="true">Loading…</span>
+    </div>
+
+    <!-- Season totals -->
+    <h2 class="section-heading">Season totals</h2>
+    <div class="table-wrap" style="margin-bottom:2rem;">
+        <table class="leaderboard" id="totals-table">
+            <caption class="sr-only">Season cumulative statistics for each rostered player on Team {{ owner }}</caption>
+            <thead>
+                <tr>
+                    <th class="col-left" style="width:160px;" scope="col">Player</th>
+                    <th style="width:44px;" scope="col">Team</th>
+                    <th style="width:44px;" scope="col">GP</th>
+                    <th scope="col">PTS</th>
+                    <th scope="col">FGM</th><th scope="col">FGA</th><th scope="col">FG%</th>
+                    <th scope="col">3PM</th><th scope="col">3PA</th><th scope="col">3P%</th>
+                    <th scope="col">FTM</th><th scope="col">FTA</th><th scope="col">FT%</th>
+                    <th scope="col">OREB</th><th scope="col">DREB</th><th scope="col">REB</th>
+                    <th scope="col">AST</th><th scope="col">STL</th><th scope="col">BLK</th><th scope="col">TO</th>
+                </tr>
+            </thead>
+            <tbody id="totals-body">
+                <tr><td colspan="20" class="state-msg">Loading…</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Ad placement: 300×250 medium rectangle -->
+    <div class="ad-unit ad-rectangle" aria-label="Advertisement">
+        <img src="{{ url_for('static', filename='ad_rectangle.svg') }}"
+             alt=""
+             role="presentation"
+             class="ad-img"
+             width="300" height="250">
+    </div>
+
+    <!-- Game log -->
+    <div class="section-toggle-header">
+        <h2 class="section-heading" style="margin-bottom:0;">Game log</h2>
+        <button class="section-toggle-btn" id="log-toggle-btn"
+                aria-expanded="false" aria-controls="log-section">
+            <span id="log-toggle-label">Show</span>
+            <svg id="log-toggle-icon" viewBox="0 0 20 20" fill="currentColor"
+                 style="width:14px;height:14px;transition:transform 0.2s;"
+                 aria-hidden="true" focusable="false">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
+            </svg>
+        </button>
+    </div>
+    <div id="log-section" class="collapsible-section" hidden>
+        <div class="table-wrap">
+            <table class="leaderboard" id="log-table">
+                <caption class="sr-only">Individual game log for each player on Team {{ owner }}</caption>
+                <thead>
+                    <tr>
+                        <th class="col-left" style="width:90px;" scope="col">Date</th>
+                        <th class="col-left" style="width:150px;" scope="col">Player</th>
+                        <th style="width:50px;" scope="col">OPP</th>
+                        <th scope="col">PTS</th>
+                        <th scope="col">FGM</th><th scope="col">FGA</th><th scope="col">FG%</th>
+                        <th scope="col">3PM</th><th scope="col">3PA</th><th scope="col">3P%</th>
+                        <th scope="col">FTM</th><th scope="col">FTA</th><th scope="col">FT%</th>
+                        <th scope="col">OREB</th><th scope="col">DREB</th><th scope="col">REB</th>
+                        <th scope="col">AST</th><th scope="col">STL</th><th scope="col">BLK</th><th scope="col">TO</th>
+                    </tr>
+                </thead>
+                <tbody id="log-body">
+                    <tr><td colspan="20" class="state-msg">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span class="footer-updated">Data through <span id="as-of">—</span></span>
+    </div>
+</footer>
+
+<script>
+const root      = document.documentElement;
+const toggleBtn = document.getElementById('theme-toggle');
+const iconSun   = document.getElementById('icon-sun');
+const iconMoon  = document.getElementById('icon-moon');
+
+function applyTheme(theme, animate) {
+    if (animate) {
+        const rect = toggleBtn.getBoundingClientRect();
+        const x = Math.round(rect.left + rect.width  / 2);
+        const y = Math.round(rect.top  + rect.height / 2);
+        root.style.setProperty('--reveal-x', `${x}px`);
+        root.style.setProperty('--reveal-y', `${y}px`);
+        document.body.classList.remove('theme-revealing');
+        void document.body.offsetWidth;
+        document.body.classList.add('theme-revealing');
+        requestAnimationFrame(() => {
+            root.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            const isDark = theme === 'dark';
+            iconSun.style.display  = isDark  ? 'block' : 'none';
+            iconMoon.style.display = !isDark ? 'block' : 'none';
+            toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+            toggleBtn.setAttribute('aria-pressed', String(isDark));
+        });
+        document.body.addEventListener('animationend', () => {
+            document.body.classList.remove('theme-revealing');
+        }, { once: true });
+        return;
+    }
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    const isDark = theme === 'dark';
+    iconSun.style.display  = isDark  ? 'block' : 'none';
+    iconMoon.style.display = !isDark ? 'block' : 'none';
+    toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    toggleBtn.setAttribute('aria-pressed', String(isDark));
+}
+
+toggleBtn.addEventListener('click', () => {
+    applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+});
+
+applyTheme(root.getAttribute('data-theme') || 'light', false);
+
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function pct(val) {
+    return val === 0 || val === null || val === undefined
+        ? '<span class="dash" aria-label="No data">—</span>'
+        : val.toFixed(1) + '%';
+}
+
+function num(val) {
+    return (val === 0 || val === null || val === undefined) ? 0 : val;
+}
+
+function statCells(r, keys) {
+    return keys.map(k => {
+        const v = r[k];
+        if (k.endsWith('_pct')) return `<td>${pct(v)}</td>`;
+        return `<td>${num(v)}</td>`;
+    }).join('');
+}
+
+const STAT_KEYS = [
+    'pts',
+    'fgm','fga','fg_pct',
+    'fg3m','fg3a','fg3_pct',
+    'ftm','fta','ft_pct',
+    'oreb','dreb','reb',
+    'ast','stl','blk','to_'
+];
+
+function buildTotalsRow(r) {
+    const played = r.games_played > 0;
+    return `<tr class="${played ? '' : 'inactive'}">
+        <td class="col-left"><span class="owner-name">${r.player_name}</span></td>
+        <td>${r.team || '—'}</td>
+        <td>${r.games_played}</td>
+        ${statCells(r, STAT_KEYS)}
+    </tr>`;
+}
+
+function getOpponent(team, matchup) {
+    if (!matchup || !team || matchup === '—') return '—';
+    const parts = matchup.split(' @ ');
+    if (parts.length !== 2) return matchup;
+    return parts[0].trim() === team.trim() ? parts[1].trim() : parts[0].trim();
+}
+
+function buildLogRow(r) {
+    const opp = getOpponent(r.team, r.matchup);
+    if (r.dnp) {
+        const statColCount = STAT_KEYS.length;
+        return `<tr class="dnp-row">
+            <td class="col-left" style="white-space:nowrap;">${r.game_date}</td>
+            <td class="col-left"><span class="owner-name">${r.player_name}</span></td>
+            <td>${opp}</td>
+            <td colspan="${statColCount}">
+                <span class="dnp-badge" aria-label="Did not play">DNP</span>
+            </td>
+        </tr>`;
+    }
+    return `<tr>
+        <td class="col-left" style="white-space:nowrap;">${r.game_date}</td>
+        <td class="col-left"><span class="owner-name">${r.player_name}</span></td>
+        <td>${opp}</td>
+        ${statCells(r, STAT_KEYS)}
+    </tr>`;
+}
+
+async function loadOwnerData() {
+    const owner     = {{ owner | tojson }};
+    const statusMsg = document.getElementById('status-msg');
+    const statusDot = document.getElementById('status-dot');
+
+    try {
+        const resp = await fetch(`/api/owner/${owner}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        document.getElementById('as-of').textContent = `${data.today_display} at ${data.server_time}`;
+
+        const totalsBody = document.getElementById('totals-body');
+        totalsBody.innerHTML = data.player_totals.length === 0
+            ? '<tr><td colspan="20" class="state-msg">No data yet.</td></tr>'
+            : data.player_totals.map(buildTotalsRow).join('');
+
+        const logBody = document.getElementById('log-body');
+        logBody.innerHTML = data.game_logs.length === 0
+            ? '<tr><td colspan="20" class="state-msg">No games played yet.</td></tr>'
+            : data.game_logs.map(buildLogRow).join('');
+
+        const gamesNote = data.games_today ? '' : ' · No games today';
+        statusMsg.textContent = `Data current as of ${data.today_display}${gamesNote}`;
+        statusDot.style.background = '#059669';
+
+    } catch (err) {
+        document.getElementById('totals-body').innerHTML =
+            `<tr><td colspan="19" class="state-msg">Failed to load: ${err.message}</td></tr>`;
+        document.getElementById('log-body').innerHTML =
+            `<tr><td colspan="20" class="state-msg">Failed to load: ${err.message}</td></tr>`;
+        statusMsg.textContent = 'Could not load data';
+        statusDot.style.background = '#dc2626';
+    }
+}
+
+// ── Game log toggle ───────────────────────────────────────────────────────────
+const logToggleBtn   = document.getElementById('log-toggle-btn');
+const logSection     = document.getElementById('log-section');
+const logToggleLabel = document.getElementById('log-toggle-label');
+const logToggleIcon  = document.getElementById('log-toggle-icon');
+
+logToggleBtn.addEventListener('click', () => {
+    const isOpen = !logSection.hidden;
+    logSection.hidden             = isOpen;
+    logToggleLabel.textContent    = isOpen ? 'Show' : 'Hide';
+    logToggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
+    logToggleBtn.setAttribute('aria-expanded', String(!isOpen));
+});
+
+// ── Table scroll state ────────────────────────────────────────────────────────
+function updateTableScrollState() {
+    document.querySelectorAll('.table-wrap').forEach(wrap => {
+        wrap.classList.toggle('is-scrollable', wrap.scrollWidth > wrap.clientWidth);
+    });
+}
+updateTableScrollState();
+window.addEventListener('resize', updateTableScrollState);
+
+loadOwnerData();
+setInterval(loadOwnerData, 60 * 1000);
+</script>
+
+</body>
+</html>

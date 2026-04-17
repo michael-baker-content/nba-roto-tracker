@@ -1,0 +1,38 @@
+<svg width="728" height="90" viewBox="0 0 728 90" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>Advertisement placeholder — 728×90 leaderboard banner</title>
+  <desc>Decorative basketball court pattern</desc>
+
+  <rect width="728" height="90" fill="#0f172a"/>
+
+  <line x1="364" y1="0" x2="364" y2="90" stroke="#1e293b" stroke-width="1"/>
+  <path d="M0,45 Q120,0 180,45 Q120,90 0,45" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <path d="M728,45 Q608,0 548,45 Q608,90 728,45" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <rect x="20" y="22" width="140" height="46" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <rect x="568" y="22" width="140" height="46" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <circle cx="160" cy="45" r="22" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <circle cx="568" cy="45" r="22" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <circle cx="364" cy="45" r="28" fill="none" stroke="#1e293b" stroke-width="1"/>
+  <circle cx="364" cy="45" r="8" fill="none" stroke="#1e293b" stroke-width="1"/>
+
+  <path d="M0,45 Q120,0 180,45 Q120,90 0,45" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="4 6" opacity="0.35"/>
+  <path d="M728,45 Q608,0 548,45 Q608,90 728,45" fill="none" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="4 6" opacity="0.35"/>
+  <circle cx="364" cy="45" r="28" fill="none" stroke="#f59e0b" stroke-width="0.5" opacity="0.35"/>
+
+  <circle cx="80" cy="45" r="16" fill="#f59e0b"/>
+  <path d="M64,45 Q72,32 80,29 Q88,32 96,45" fill="none" stroke="#92400e" stroke-width="1.2"/>
+  <path d="M64,45 Q72,58 80,61 Q88,58 96,45" fill="none" stroke="#92400e" stroke-width="1.2"/>
+  <line x1="64" y1="45" x2="96" y2="45" stroke="#92400e" stroke-width="1.2"/>
+  <line x1="80" y1="29" x2="80" y2="61" stroke="#92400e" stroke-width="1.2"/>
+  <circle cx="80" cy="45" r="16" fill="none" stroke="#b45309" stroke-width="1"/>
+
+  <circle cx="648" cy="45" r="16" fill="#f59e0b"/>
+  <path d="M632,45 Q640,32 648,29 Q656,32 664,45" fill="none" stroke="#92400e" stroke-width="1.2"/>
+  <path d="M632,45 Q640,58 648,61 Q656,58 664,45" fill="none" stroke="#92400e" stroke-width="1.2"/>
+  <line x1="632" y1="45" x2="664" y2="45" stroke="#92400e" stroke-width="1.2"/>
+  <line x1="648" y1="29" x2="648" y2="61" stroke="#92400e" stroke-width="1.2"/>
+  <circle cx="648" cy="45" r="16" fill="none" stroke="#b45309" stroke-width="1"/>
+
+  <text x="364" y="34" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="10" font-weight="600" letter-spacing="0.1em" fill="#334155">ADVERTISEMENT</text>
+  <text x="364" y="52" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="13" fill="#475569">728 × 90</text>
+  <text x="364" y="66" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="10" fill="#334155">IAB Leaderboard Banner</text>
+</svg>
