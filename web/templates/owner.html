@@ -240,7 +240,7 @@ function buildTotalsFooter(rows) {
     return `<tr class="totals-footer">
         <td class="col-left"><strong>Team total</strong></td>
         <td>—</td>
-        <td>—</td>
+        <td>${sum('games_played')}</td>
         <td>${sum('pts')}</td>
         <td>${fgm}</td><td>${fga}</td><td>${fg_pct}</td>
         <td>${fg3m}</td><td>${fg3a}</td><td>${fg3_pct}</td>
