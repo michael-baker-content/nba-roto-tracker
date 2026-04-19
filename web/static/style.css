@@ -437,6 +437,8 @@ header {
     border-top: 1px solid var(--border);
     background: var(--bg-card);
     margin-top: auto;
+    /* Prevent Safari bottom nav from obscuring the footer on iOS */
+    padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
 .site-footer-inner {
