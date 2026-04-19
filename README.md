@@ -28,32 +28,38 @@ Each owner is ranked 1 through n per category (n = best, 1 = worst; TO is invert
 
 ### 1. Clone the repository
 
-```bash
+```powershell
+# Windows PowerShell (same command on macOS / Linux)
 git clone https://github.com/michael-baker-content/nba-roto-tracker.git
 cd nba-roto-tracker
 ```
 
 ### 2. Create and activate a virtual environment
 
-```bash
-# macOS / Linux
-python3 -m venv .venv
-source .venv/bin/activate
-
+```powershell
 # Windows PowerShell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
+
+# macOS / Linux
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
 ### 3. Install dependencies
 
-```bash
+```powershell
+# Windows PowerShell (same command on macOS / Linux)
 pip install -r requirements.txt
 ```
 
 ### 4. Configure environment variables
 
-```bash
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+
+# macOS / Linux
 cp .env.example .env
 ```
 
@@ -61,13 +67,15 @@ Open `.env` and set a `SECRET_KEY`. Leave `DATABASE_URL` blank to use the local 
 
 ### 5. Initialise the database
 
-```bash
+```powershell
+# Windows PowerShell (same command on macOS / Linux)
 python -m db.schema
 ```
 
 ### 6. Run the daily pipeline
 
-```bash
+```powershell
+# Windows PowerShell (same command on macOS / Linux)
 python main.py --date YYYY-MM-DD
 ```
 
@@ -75,7 +83,8 @@ This fetches box scores for the given date, stores game logs, and saves a standi
 
 ### 7. Start the web server
 
-```bash
+```powershell
+# Windows PowerShell (same command on macOS / Linux)
 python -m web.app
 ```
 
@@ -122,7 +131,11 @@ These dates determine which game logs are included in standings calculations and
 
 After NBA games complete each evening, run the pipeline:
 
-```bash
+```powershell
+# Windows PowerShell
+python main.py
+
+# macOS / Linux (same command)
 python main.py
 ```
 
@@ -130,7 +143,8 @@ This fetches today's box scores, updates the database, and saves a standings sna
 
 To also export a file:
 
-```bash
+```powershell
+# Windows PowerShell (same command on macOS / Linux)
 python main.py --format xlsx   # or csv / json
 ```
 
@@ -138,7 +152,8 @@ python main.py --format xlsx   # or csv / json
 
 ## Running tests
 
-```bash
+```powershell
+# Windows PowerShell (same command on macOS / Linux)
 pytest tests/ -v
 ```
 
@@ -220,7 +235,8 @@ The project is designed to run on any platform that supports Python web applicat
 
 ### Push to GitHub
 
-```bash
+```powershell
+# Windows PowerShell (same commands on macOS / Linux)
 git init
 git add .
 git commit -m "Initial commit"
@@ -235,7 +251,7 @@ git push -u origin main
 - Add a `runtime.txt` file to your repo containing `python-3.11` so Railway detects the correct Python version
 - In your service settings, set the **Start Command** explicitly to `python -m gunicorn web.app:app` — Railway's auto-detection may not find gunicorn in the virtualenv path
 - Make sure `gunicorn` is listed in `requirements.txt`
-- For the daily pipeline, add a second **Cron Job** service pointing to the same repo with start command `python main.py` and schedule `0 9 * * *` (9 AM UTC / 1 AM PT — after west coast games finish)
+- For the daily pipeline, add a second **Cron Job** service pointing to the same repo with start command `python main.py` and schedule `0 9 * * *` (9 AM UTC / 1 AM PT — after west coast games finish). Note that Railway's cloud IPs may be rate-limited by the NBA API — running the pipeline manually from a local machine is more reliable
 
 **Render** ([render.com](https://render.com)) — create a Web Service from your repo and a separate Cron Job service. Managed PostgreSQL available as an add-on.
 
@@ -253,7 +269,8 @@ Set `SECRET_KEY`, `DATABASE_URL`, and `TZ` in your platform's environment settin
 
 If your platform provides a shell, run:
 
-```bash
+```powershell
+# Windows PowerShell (same command on macOS / Linux)
 python -m db.schema
 ```
 
@@ -263,25 +280,42 @@ If no shell is available (e.g. Railway free tier), add `INIT_DB=1` as an environ
 
 Run the pipeline from your local machine with `DATABASE_URL` pointed at your production database. You will need `psycopg2-binary` installed locally:
 
-```bash
+```powershell
+# Windows PowerShell (same command on macOS / Linux)
 pip install psycopg2-binary
 ```
 
-Then, with your production `DATABASE_URL` set as an environment variable:
+Then set `DATABASE_URL` and run the pipeline for each game day:
 
-```bash
-# macOS / Linux
-export DATABASE_URL="postgresql://..."
-
+```powershell
 # Windows PowerShell
 $env:DATABASE_URL="postgresql://..."
-
 python main.py --date YYYY-MM-DD   # repeat for each game day
+Remove-Item Env:DATABASE_URL
+
+# macOS / Linux
+export DATABASE_URL="postgresql://..."
+python main.py --date YYYY-MM-DD   # repeat for each game day
+unset DATABASE_URL
 ```
 
 **4. Schedule the daily pipeline**
 
 The pipeline should run once per day after NBA games typically finish. For US leagues, `0 9 * * *` (9 AM UTC / 1 AM PT) is recommended — this gives enough time for late west coast games to finish and for final box scores to be available on the NBA API.
+
+If running manually from a local machine each night, the commands are:
+
+```powershell
+# Windows PowerShell
+$env:DATABASE_URL="postgresql://..."
+python main.py
+Remove-Item Env:DATABASE_URL
+
+# macOS / Linux
+export DATABASE_URL="postgresql://..."
+python main.py
+unset DATABASE_URL
+```
 
 ### A note on the NBA API
 
