@@ -154,12 +154,29 @@ ON CONFLICT (snapshot_date, fantasy_owner) DO UPDATE SET
 def save_standings_snapshot(standings: list[dict], snapshot_date: "date"):
     """
     Persist the current standings as a snapshot for snapshot_date.
-    Called from main.py after game logs are saved so the snapshot
-    reflects the standings after that day's games.
+    Called from main.py BEFORE game logs are saved so the snapshot
+    captures standings prior to that day's games — enabling meaningful
+    trend arrows after the pipeline runs.
+
+    Skips silently if a snapshot already exists for snapshot_date,
+    so re-running the pipeline for the same date is safe.
     """
+    from db.schema import get_connection
+    date_str = str(snapshot_date)
+
+    # Check if a snapshot already exists for this date
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS n FROM standings_snapshots WHERE snapshot_date = :d",
+            {"d": date_str}
+        ).fetchone()
+        if row and row["n"] > 0:
+            print(f"   –  Snapshot for {snapshot_date} already exists — skipping.")
+            return
+
     rows = [
         {
-            "snapshot_date": str(snapshot_date),
+            "snapshot_date": date_str,
             "fantasy_owner": row["fantasy_owner"],
             "place":         row["place"],
             "total_score":   float(row["total_score"]),

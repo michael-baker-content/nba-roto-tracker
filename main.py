@@ -70,7 +70,16 @@ def main():
     print(f"\n📊  {len(df)} player game log(s) found across "
           f"{df['Fantasy_Owner'].nunique()} owner(s).")
 
-    # ── Step 3: Upsert game logs into the database ────────────────────────────
+    # ── Step 3: Save standings snapshot BEFORE updating game logs ─────────────
+    # Capturing standings before tonight's games are stored means the snapshot
+    # reflects the "before" state — so trend arrows show meaningful movement
+    # immediately after the pipeline runs rather than requiring a second run.
+    # If a snapshot already exists for this date (e.g. pipeline re-run), it is
+    # skipped so the before/after comparison remains intact.
+    standings = get_season_standings()
+    save_standings_snapshot(standings, target_date)
+
+    # ── Step 4: Upsert game logs into the database ────────────────────────────
     # Split by GAME_ID so each game is saved as a separate batch. This keeps
     # the upsert logic clean and makes partial re-runs easy to reason about.
     # MATCHUP (human-readable, e.g. "ORL @ PHI") is stored separately from
@@ -81,14 +90,7 @@ def main():
     else:
         save_game_logs(df, target_date, f"unknown_{target_date}")
 
-    # ── Step 4: Save standings snapshot ──────────────────────────────────────
-    # Standings are recomputed from all game logs (not just today's), so this
-    # snapshot reflects cumulative standings after target_date's games.
-    # The web app compares snapshots to generate trend indicators (▲ / ▼).
-    standings = get_season_standings()
-    save_standings_snapshot(standings, target_date)
-
-    # ── Step 5: Optional file export ──────────────────────────────────────────
+    # ── Step 5: Optional file export ─────────────────────────────────────────
     if fmt:
         writer, ext = WRITERS[fmt]
         out_path = Path(f"fantasy_gamelogs_{target_date}.{ext}")
