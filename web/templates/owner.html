@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team {{ owner }} – Fantasy Basketball</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <script>
         (function() {
             const saved = localStorage.getItem('theme');
@@ -288,7 +289,7 @@ async function loadOwnerData() {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
 
-        document.getElementById('as-of').textContent = `${data.today_display} at ${data.server_time}`;
+        document.getElementById('as-of').textContent = `${data.last_updated} at ${data.server_time}`;
 
         const totalsBody = document.getElementById('totals-body');
         if (data.player_totals.length === 0) {
@@ -303,7 +304,7 @@ async function loadOwnerData() {
             ? '<tr><td colspan="20" class="state-msg">No games played yet.</td></tr>'
             : data.game_logs.map(buildLogRow).join('');
 
-        statusMsg.textContent = `Data current as of ${data.today_display}`;
+        statusMsg.textContent = `Data current as of ${data.last_updated}`;
         statusDot.style.background = '#059669';
 
     } catch (err) {
