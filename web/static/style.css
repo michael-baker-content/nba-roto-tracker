@@ -743,3 +743,10 @@ button:focus-visible {
 
 .trend-up   { color: var(--green); }
 .trend-down { color: var(--red); }
+
+/* ── Season totals footer row ─────────────────────────────────────────────── */
+.totals-footer td {
+    border-top: 2px solid var(--border);
+    font-weight: 600;
+    background: var(--bg-card);
+}

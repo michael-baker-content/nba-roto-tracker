@@ -222,6 +222,34 @@ function buildTotalsRow(r) {
     </tr>`;
 }
 
+function buildTotalsFooter(rows) {
+    // Sum counting stats across all players; recalculate percentages from totals.
+    const active = rows.filter(r => r.games_played > 0);
+    if (active.length === 0) return '';
+
+    const sum = (key) => active.reduce((acc, r) => acc + (r[key] || 0), 0);
+
+    const fgm  = sum('fgm'),  fga  = sum('fga');
+    const fg3m = sum('fg3m'), fg3a = sum('fg3a');
+    const ftm  = sum('ftm'),  fta  = sum('fta');
+
+    const fg_pct  = fga  > 0 ? (fgm  / fga  * 100).toFixed(1) + '%' : '—';
+    const fg3_pct = fg3a > 0 ? (fg3m / fg3a * 100).toFixed(1) + '%' : '—';
+    const ft_pct  = fta  > 0 ? (ftm  / fta  * 100).toFixed(1) + '%' : '—';
+
+    return `<tr class="totals-footer">
+        <td class="col-left"><strong>Team total</strong></td>
+        <td>—</td>
+        <td>—</td>
+        <td>${sum('pts')}</td>
+        <td>${fgm}</td><td>${fga}</td><td>${fg_pct}</td>
+        <td>${fg3m}</td><td>${fg3a}</td><td>${fg3_pct}</td>
+        <td>${ftm}</td><td>${fta}</td><td>${ft_pct}</td>
+        <td>${sum('oreb')}</td><td>${sum('dreb')}</td><td>${sum('reb')}</td>
+        <td>${sum('ast')}</td><td>${sum('stl')}</td><td>${sum('blk')}</td><td>${sum('to_')}</td>
+    </tr>`;
+}
+
 function getOpponent(team, matchup) {
     if (!matchup || !team || matchup === '—') return '—';
     const parts = matchup.split(' @ ');
@@ -263,9 +291,12 @@ async function loadOwnerData() {
         document.getElementById('as-of').textContent = `${data.today_display} at ${data.server_time}`;
 
         const totalsBody = document.getElementById('totals-body');
-        totalsBody.innerHTML = data.player_totals.length === 0
-            ? '<tr><td colspan="20" class="state-msg">No data yet.</td></tr>'
-            : data.player_totals.map(buildTotalsRow).join('');
+        if (data.player_totals.length === 0) {
+            totalsBody.innerHTML = '<tr><td colspan="20" class="state-msg">No data yet.</td></tr>';
+        } else {
+            totalsBody.innerHTML = data.player_totals.map(buildTotalsRow).join('')
+                + buildTotalsFooter(data.player_totals);
+        }
 
         const logBody = document.getElementById('log-body');
         logBody.innerHTML = data.game_logs.length === 0

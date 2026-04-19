@@ -220,6 +220,7 @@ function buildDesktopRow(row, allRanksByCol, active) {
         if (!active)             valStr = '<span class="dash" aria-label="No data">—</span>';
         else if (col==='FG_PCT') valStr = row.fg_pct.toFixed(1) + '%';
         else if (col==='FT_PCT') valStr = row.ft_pct.toFixed(1) + '%';
+        else if (col==='TO')     valStr = row.to_ !== undefined ? row.to_ : '—';
         else { const k=col.toLowerCase(); valStr = row[k]!==undefined ? row[k] : '—'; }
         html += `<td><div class="cat-cell">
             <span class="cat-val">${valStr}</span>
@@ -244,6 +245,7 @@ function buildMobileCard(row, allRanksByCol, active, idx) {
         if (!active)             valStr = '—';
         else if (col==='FG_PCT') valStr = row.fg_pct.toFixed(1) + '%';
         else if (col==='FT_PCT') valStr = row.ft_pct.toFixed(1) + '%';
+        else if (col==='TO')     valStr = row.to_ !== undefined ? row.to_ : '—';
         else { const k=col.toLowerCase(); valStr = row[k]!==undefined ? row[k] : '—'; }
 
         catGrid += `
