@@ -68,3 +68,12 @@ ROTO_CATEGORIES = [
     ("BLK",    "BLK",   False),   # total blocks
     ("TO",     "TO",    True),    # turnovers — fewer is better
 ]
+
+# ── Active playoff teams ───────────────────────────────────────────────────────
+# Remove a team's abbreviation when they are eliminated from the playoffs.
+# Used by the owner page to gray out players whose teams are no longer playing.
+# Stats for eliminated players still count toward season totals.
+ACTIVE_TEAMS: set = {
+    "ATL", "BOS", "CLE", "DEN", "DET", "HOU", "LAL", 
+    "MIN", "NYK", "OKC", "ORL", "PHI", "SAS", "TOR",
+}

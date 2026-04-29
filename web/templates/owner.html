@@ -213,9 +213,11 @@ const STAT_KEYS = [
     'ast','stl','blk','to_'
 ];
 
-function buildTotalsRow(r) {
-    const played = r.games_played > 0;
-    return `<tr class="${played ? '' : 'inactive'}">
+function buildTotalsRow(r, activeTeams) {
+    const played      = r.games_played > 0;
+    const eliminated  = activeTeams && r.team && !activeTeams.includes(r.team);
+    const rowClass    = eliminated ? 'inactive' : (played ? '' : 'inactive');
+    return `<tr class="${rowClass}">
         <td class="col-left"><span class="owner-name">${r.player_name}</span></td>
         <td>${r.team || '—'}</td>
         <td>${r.games_played}</td>
@@ -291,11 +293,12 @@ async function loadOwnerData() {
 
         document.getElementById('as-of').textContent = `${data.last_updated} at ${data.server_time}`;
 
+        const activeTeams = data.active_teams || [];
         const totalsBody = document.getElementById('totals-body');
         if (data.player_totals.length === 0) {
             totalsBody.innerHTML = '<tr><td colspan="20" class="state-msg">No data yet.</td></tr>';
         } else {
-            totalsBody.innerHTML = data.player_totals.map(buildTotalsRow).join('')
+            totalsBody.innerHTML = data.player_totals.map(r => buildTotalsRow(r, activeTeams)).join('')
                 + buildTotalsFooter(data.player_totals);
         }
 

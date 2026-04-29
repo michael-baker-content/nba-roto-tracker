@@ -15,7 +15,7 @@ from flask import Flask, jsonify, render_template, abort
 from flask_caching import Cache
 
 from config.roster import ROSTER
-from config.settings import LEAGUE_START, LEAGUE_END, ROTO_CATEGORIES, SECRET_KEY
+from config.settings import LEAGUE_START, LEAGUE_END, ROTO_CATEGORIES, SECRET_KEY, ACTIVE_TEAMS
 from db.queries import (
     get_season_standings,
     get_season_stat_totals,
@@ -173,6 +173,7 @@ def api_owner(owner_name):
         "owner":         owner_name,
         "league_start":  LEAGUE_START,
         "league_end":    LEAGUE_END,
+        "active_teams":  list(ACTIVE_TEAMS),
         "player_totals": totals,
         "game_logs":     logs,
     })
