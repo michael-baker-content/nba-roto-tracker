@@ -250,7 +250,7 @@ function buildDesktopRow(row, allRanksByCol, active, sortCol) {
     let html = `<tr class="${active ? '' : 'inactive'}">`;
     html += `<td class="col-left"><span class="${placeClass(place)}" aria-label="Place ${place}">${place}</span></td>`;
     html += `<td class="col-left"><a class="owner-link" href="/owner/${row.fantasy_owner}">${row.fantasy_owner}</a></td>`;
-    html += `<td class="${sortCol==='total_score' ? 'sort-active-col' : ''}"><span class="score">${row.total_score}</span>${sortCol === 'total_score' ? trendBadge(row.trend) : ''}</td>`;
+    html += `<td class="${sortCol==='total_score' ? 'sort-active-col' : ''}"><div class="score-cell">${sortCol === 'total_score' ? trendBadge(row.trend) : ''}<span class="score">${row.total_score}</span></div></td>`;
 
     CAT_COLS.forEach(cat => {
         const col = cat.col;
@@ -317,9 +317,9 @@ function buildMobileCard(row, allRanksByCol, active, idx, sortCol) {
             <span class="${placeClass(place)}" aria-label="Place ${place}">${place}</span>
             <a class="owner-link mob-owner" href="/owner/${row.fantasy_owner}"
                onclick="event.stopPropagation();">${row.fantasy_owner}</a>
+            ${sortCol === 'total_score' ? trendBadge(row.trend) : ''}
             <span class="mob-score${sortCol !== 'total_score' ? ' mob-score-hidden' : ''}" aria-label="Score ${row.total_score}">${row.total_score}</span>
             ${sortValStr}
-            ${sortCol === 'total_score' ? trendBadge(row.trend) : ''}
             <svg class="mob-chevron" viewBox="0 0 20 20" fill="currentColor"
                  aria-hidden="true" focusable="false">
                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
