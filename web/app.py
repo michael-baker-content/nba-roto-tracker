@@ -103,7 +103,21 @@ def _today_fields() -> dict:
 
 @app.route("/")
 def index():
-    categories = [{"col": col, "label": label} for col, label, _ in ROTO_CATEGORIES]
+    full_labels = {
+        "PTS":    "Points",
+        "FG_PCT": "Field Goal %",
+        "FT_PCT": "Free Throw %",
+        "FG3M":   "3-Pointers Made",
+        "REB":    "Rebounds",
+        "AST":    "Assists",
+        "STL":    "Steals",
+        "BLK":    "Blocks",
+        "TO":     "Turnovers",
+    }
+    categories = [
+        {"col": col, "label": label, "full_label": full_labels.get(col, label)}
+        for col, label, _ in ROTO_CATEGORIES
+    ]
     return render_template("index.html", categories=categories, **_common_ctx())
 
 

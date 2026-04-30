@@ -79,6 +79,17 @@
         </div>
     </div>
 
+    <!-- Mobile: category sort selector -->
+    <div class="mobile-only mob-sort-bar">
+        <label for="mob-sort-select" class="mob-sort-label">Sort by</label>
+        <select id="mob-sort-select" class="mob-sort-select" aria-label="Sort leaderboard by category">
+            <option value="total_score">Total Score</option>
+            {% for cat in categories %}
+            <option value="{{ cat.col }}">{{ cat.full_label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
     <!-- Desktop: full table -->
     <div class="table-wrap desktop-only">
         <table class="leaderboard" id="leaderboard">
@@ -87,9 +98,13 @@
                 <tr>
                     <th class="col-left" style="width:44px;" scope="col">Rank</th>
                     <th class="col-left" style="width:110px;" scope="col">Owner</th>
-                    <th style="width:64px;" scope="col">Score</th>
+                    <th class="sortable-col" data-col="total_score" style="width:64px;" scope="col">
+                        Score <span class="sort-indicator" aria-hidden="true">▼</span>
+                    </th>
                     {% for cat in categories %}
-                    <th scope="col">{{ cat.label }}</th>
+                    <th class="sortable-col" data-col="{{ cat.col }}" scope="col">
+                        {{ cat.label }} <span class="sort-indicator" aria-hidden="true"></span>
+                    </th>
                     {% endfor %}
                 </tr>
             </thead>
@@ -137,8 +152,6 @@ function applyTheme(theme, animate) {
         document.body.classList.remove('theme-revealing');
         void document.body.offsetWidth;
         document.body.classList.add('theme-revealing');
-        // Defer the theme switch by one frame so the browser can commit
-        // the animation start before the repaint triggered by data-theme change.
         requestAnimationFrame(() => {
             root.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
@@ -183,6 +196,32 @@ applyTheme(root.getAttribute('data-theme') || 'light', false);
 // ── Standings ─────────────────────────────────────────────────────────────────
 const CAT_COLS = {{ categories | tojson }};
 
+// Columns where lower raw value = better (affects default sort direction)
+const ASCENDING_COLS = new Set(['TO']);
+
+// Sort state: col = column key, dir = 'desc' | 'asc', null = default (total_score desc)
+let sortState = { col: 'total_score', dir: 'desc' };
+let cachedStandings = [];
+let cachedAllRanksByCol = {};
+
+function getRawValue(row, col) {
+    if (col === 'total_score') return row.total_score;
+    if (col === 'FG_PCT')      return row.fg_pct;
+    if (col === 'FT_PCT')      return row.ft_pct;
+    if (col === 'TO')          return row.to_;
+    return row[col.toLowerCase()];
+}
+
+function getSortedStandings(standings, col, dir) {
+    const sorted = [...standings];
+    sorted.sort((a, b) => {
+        const va = getRawValue(a, col) ?? -Infinity;
+        const vb = getRawValue(b, col) ?? -Infinity;
+        return dir === 'asc' ? va - vb : vb - va;
+    });
+    return sorted;
+}
+
 function ptsBadgeClass(pts, allPts) {
     const max = Math.max(...allPts);
     const min = Math.min(...allPts);
@@ -206,12 +245,12 @@ function trendBadge(trend) {
     return '';
 }
 
-function buildDesktopRow(row, allRanksByCol, active) {
+function buildDesktopRow(row, allRanksByCol, active, sortCol) {
     const place = row.place;
     let html = `<tr class="${active ? '' : 'inactive'}">`;
     html += `<td class="col-left"><span class="${placeClass(place)}" aria-label="Place ${place}">${place}</span></td>`;
     html += `<td class="col-left"><a class="owner-link" href="/owner/${row.fantasy_owner}">${row.fantasy_owner}</a></td>`;
-    html += `<td><span class="score">${row.total_score}</span>${trendBadge(row.trend)}</td>`;
+    html += `<td class="${sortCol==='total_score' ? 'sort-active-col' : ''}"><span class="score">${row.total_score}</span>${sortCol === 'total_score' ? trendBadge(row.trend) : ''}</td>`;
 
     CAT_COLS.forEach(cat => {
         const col = cat.col;
@@ -223,7 +262,7 @@ function buildDesktopRow(row, allRanksByCol, active) {
         else if (col==='FT_PCT') valStr = row.ft_pct.toFixed(1) + '%';
         else if (col==='TO')     valStr = row.to_ !== undefined ? row.to_ : '—';
         else { const k=col.toLowerCase(); valStr = row[k]!==undefined ? row[k] : '—'; }
-        html += `<td><div class="cat-cell">
+        html += `<td class="${sortCol===col ? 'sort-active-col' : ''}"><div class="cat-cell">
             <span class="cat-val">${valStr}</span>
             <span class="cat-pts ${badgeClass}">${active ? pts : '—'}</span>
         </div></td>`;
@@ -233,9 +272,22 @@ function buildDesktopRow(row, allRanksByCol, active) {
     return html;
 }
 
-function buildMobileCard(row, allRanksByCol, active, idx) {
+function buildMobileCard(row, allRanksByCol, active, idx, sortCol) {
     const place = row.place;
     const detailId = `detail-${idx}`;
+
+    // When sorting by a category, show just the stat value in the same
+    // large style as the total score — no label, no clutter.
+    let sortValStr = '';
+    if (sortCol !== 'total_score') {
+        let v;
+        if (sortCol === 'FG_PCT')      v = row.fg_pct != null ? row.fg_pct.toFixed(1) + '%' : '—';
+        else if (sortCol === 'FT_PCT') v = row.ft_pct != null ? row.ft_pct.toFixed(1) + '%' : '—';
+        else if (sortCol === 'TO')     v = row.to_ ?? '—';
+        else                           v = row[sortCol.toLowerCase()] ?? '—';
+        const catLabel = CAT_COLS.find(c => c.col === sortCol)?.label || sortCol;
+        sortValStr = `<span class="mob-sort-val" aria-label="${catLabel}: ${v}">${v}</span>`;
+    }
 
     let catGrid = '';
     CAT_COLS.forEach(cat => {
@@ -250,7 +302,7 @@ function buildMobileCard(row, allRanksByCol, active, idx) {
         else { const k=col.toLowerCase(); valStr = row[k]!==undefined ? row[k] : '—'; }
 
         catGrid += `
-            <div class="mob-cat-item">
+            <div class="mob-cat-item${col===sortCol ? ' mob-cat-highlighted' : ''}">
                 <span class="mob-cat-label">${cat.label}</span>
                 <span class="mob-cat-val">${valStr}</span>
                 <span class="cat-pts ${badgeClass}" style="margin-top:2px;">${active ? pts : '—'}</span>
@@ -265,8 +317,9 @@ function buildMobileCard(row, allRanksByCol, active, idx) {
             <span class="${placeClass(place)}" aria-label="Place ${place}">${place}</span>
             <a class="owner-link mob-owner" href="/owner/${row.fantasy_owner}"
                onclick="event.stopPropagation();">${row.fantasy_owner}</a>
-            <span class="mob-score" aria-label="Score ${row.total_score}">${row.total_score}</span>
-            ${trendBadge(row.trend)}
+            <span class="mob-score${sortCol !== 'total_score' ? ' mob-score-hidden' : ''}" aria-label="Score ${row.total_score}">${row.total_score}</span>
+            ${sortValStr}
+            ${sortCol === 'total_score' ? trendBadge(row.trend) : ''}
             <svg class="mob-chevron" viewBox="0 0 20 20" fill="currentColor"
                  aria-hidden="true" focusable="false">
                 <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
@@ -289,6 +342,68 @@ function toggleCard(idx) {
     btn.setAttribute('aria-expanded', String(!isOpen));
 }
 
+function updateSortIndicators(activeCol, activeDir) {
+    document.querySelectorAll('.sortable-col').forEach(th => {
+        const col = th.dataset.col;
+        const ind = th.querySelector('.sort-indicator');
+        if (col === activeCol) {
+            ind.textContent = activeDir === 'asc' ? '▲' : '▼';
+            th.classList.add('sort-active-header');
+        } else {
+            ind.textContent = '';
+            th.classList.remove('sort-active-header');
+        }
+    });
+}
+
+function renderStandings() {
+    const { col, dir } = sortState;
+    const sorted = getSortedStandings(cachedStandings, col, dir);
+
+    const tbody     = document.getElementById('standings-body');
+    const mobileCtr = document.getElementById('mobile-standings');
+
+    let desktopHtml = '';
+    let mobileHtml  = '';
+
+    sorted.forEach((row, idx) => {
+        const active = (row.pts > 0 || row.fg3m > 0 || row.reb > 0 || row.ast > 0 || row.to_ > 0);
+        desktopHtml += buildDesktopRow(row, cachedAllRanksByCol, active, col);
+        mobileHtml  += buildMobileCard(row, cachedAllRanksByCol, active, idx, col);
+    });
+
+    tbody.innerHTML     = desktopHtml;
+    mobileCtr.innerHTML = mobileHtml;
+    updateSortIndicators(col, dir);
+    updateTableScrollState();
+}
+
+// ── Desktop column sort ───────────────────────────────────────────────────────
+document.querySelectorAll('.sortable-col').forEach(th => {
+    th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        if (sortState.col === col) {
+            // Same column: toggle direction
+            sortState.dir = sortState.dir === 'desc' ? 'asc' : 'desc';
+        } else {
+            // New column: default to best-first
+            // For TO (ascending = fewer is better), default to asc
+            sortState.col = col;
+            sortState.dir = ASCENDING_COLS.has(col) ? 'asc' : 'desc';
+        }
+        renderStandings();
+    });
+});
+
+// ── Mobile category selector ──────────────────────────────────────────────────
+const mobSortSelect = document.getElementById('mob-sort-select');
+mobSortSelect.addEventListener('change', () => {
+    const col = mobSortSelect.value;
+    sortState.col = col;
+    sortState.dir = ASCENDING_COLS.has(col) ? 'asc' : 'desc';
+    renderStandings();
+});
+
 async function loadStandings() {
     const tbody     = document.getElementById('standings-body');
     const mobileCtr = document.getElementById('mobile-standings');
@@ -301,25 +416,14 @@ async function loadStandings() {
         const data = await resp.json();
 
         document.getElementById('as-of').textContent = `${data.last_updated} at ${data.server_time}`;
-        const standings = data.standings;
+        cachedStandings = data.standings;
 
-        const allRanksByCol = {};
+        cachedAllRanksByCol = {};
         CAT_COLS.forEach(cat => {
-            allRanksByCol[cat.col] = standings.map(r => getRankVal(r, cat.col));
+            cachedAllRanksByCol[cat.col] = cachedStandings.map(r => getRankVal(r, cat.col));
         });
 
-        let desktopHtml = '';
-        let mobileHtml  = '';
-
-        standings.forEach((row, idx) => {
-            const active = (row.pts > 0 || row.fg3m > 0 || row.reb > 0 || row.ast > 0 || row.to_ > 0);
-            desktopHtml += buildDesktopRow(row, allRanksByCol, active);
-            mobileHtml  += buildMobileCard(row, allRanksByCol, active, idx);
-        });
-
-        tbody.innerHTML        = desktopHtml;
-        mobileCtr.innerHTML    = mobileHtml;
-
+        renderStandings();
         statusMsg.textContent  = `Standings current as of ${data.last_updated}`;
         statusDot.style.background = '#059669';
 
@@ -333,8 +437,6 @@ async function loadStandings() {
 }
 
 // ── Table scroll state ────────────────────────────────────────────────────────
-// Remove right-side border-radius when the table is wider than its wrapper
-// so the corner matches the square bottom-right corner created by the scrollbar.
 function updateTableScrollState() {
     document.querySelectorAll('.table-wrap').forEach(wrap => {
         wrap.classList.toggle('is-scrollable', wrap.scrollWidth > wrap.clientWidth);

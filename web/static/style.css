@@ -752,3 +752,83 @@ button:focus-visible {
     font-weight: 600;
     background: var(--bg-card);
 }
+
+/* ── Sortable column headers ──────────────────────────────────────────────── */
+.sortable-col {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.sortable-col:hover {
+    background: var(--bg-hover);
+}
+
+.sort-indicator {
+    font-size: 10px;
+    margin-left: 3px;
+    opacity: 0.5;
+}
+
+.sort-active-header .sort-indicator {
+    opacity: 1;
+    color: var(--accent);
+}
+
+.sort-active-header {
+    color: var(--accent);
+}
+
+.sort-active-col {
+    background: var(--bg-hover);
+}
+
+/* ── Mobile sort selector ─────────────────────────────────────────────────── */
+.mob-sort-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.mob-sort-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.mob-sort-select {
+    font-size: 13px;
+    padding: 0.3rem 0.5rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text);
+    cursor: pointer;
+    flex: 1;
+}
+
+.mob-sort-select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Highlighted category in mobile card grid */
+.mob-cat-highlighted {
+    background: var(--bg-hover);
+    border-radius: var(--radius-sm);
+}
+
+/* Sort value shown in mobile card header when non-default sort is active —
+   matches the size and weight of the total score for visual consistency */
+.mob-sort-val {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-left: auto;
+    margin-right: 4px;
+}
+
+.mob-score-hidden {
+    display: none;
+}
