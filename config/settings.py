@@ -75,5 +75,4 @@ ROTO_CATEGORIES = [
 # Stats for eliminated players still count toward season totals.
 ACTIVE_TEAMS: set = {
     "CLE", "DET", "LAL", 
-    "MIN", "NYK", "OKC", "ORL", "PHI", "SAS", "TOR",
-}
+    "MIN", "NYK", "OKC", "PHI", "SAS",}
