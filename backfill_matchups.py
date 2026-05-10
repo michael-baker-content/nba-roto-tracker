@@ -37,7 +37,7 @@ def get_matchup_for_date(game_date: str) -> dict[str, str]:
     e.g. "20260414/MIACHA" → away=MIA, home=CHA.
     """
     dt = datetime.strptime(game_date, "%Y-%m-%d")
-    date_str = dt.strftime("%m/%d/%Y")
+    date_str = dt.strftime("%Y-%m-%d")
 
     try:
         board = scoreboardv3.ScoreboardV3(game_date=date_str, league_id="00")
