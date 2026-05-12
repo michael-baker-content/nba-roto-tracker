@@ -180,3 +180,4 @@ def get_stat_leaders(start: str, end: str, top_n: int = 5) -> dict:
 def get_season_stat_leaders() -> dict:
     from config.settings import LEAGUE_START, LEAGUE_END
     return get_stat_leaders(LEAGUE_START, LEAGUE_END)
+
