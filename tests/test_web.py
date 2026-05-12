@@ -42,7 +42,8 @@ def client():
          patch("db.queries.get_last_updated",        return_value="Apr 15, 2026"), \
          patch("db.queries.get_trends",              return_value={"Aaron": "up"}), \
          patch("db.queries.get_season_owner_player_totals", return_value=MOCK_TOTALS), \
-         patch("db.queries.get_season_owner_game_logs",     return_value=MOCK_LOGS):
+         patch("db.queries.get_season_owner_game_logs",     return_value=MOCK_LOGS), \
+         patch("db.queries.get_season_stat_leaders",        return_value={"Points": []}):
         from web.app import app, cache
         app.config["TESTING"]    = True
         app.config["CACHE_TYPE"] = "NullCache"
@@ -119,3 +120,29 @@ class TestAPIRoutes:
         for field in ("player_name", "team", "games_played", "pts",
                       "fg_pct", "reb", "ast"):
             assert field in row, f"Missing field: {field}"
+
+
+class TestLeadersRoutes:
+    """Tests for the statistical leaders page and API."""
+
+    def test_leaders_page_returns_200(self, client):
+        resp = client.get("/leaders")
+        assert resp.status_code == 200
+
+    def test_leaders_page_contains_title(self, client):
+        resp = client.get("/leaders")
+        assert b"Statistical Leaders" in resp.data
+
+    def test_leaders_api_returns_200(self, client):
+        resp = client.get("/api/leaders")
+        assert resp.status_code == 200
+
+    def test_leaders_api_has_required_keys(self, client):
+        data = client.get("/api/leaders").get_json()
+        assert "leaders" in data
+        assert "last_updated" in data
+        assert "server_time" in data
+
+    def test_leaders_api_leaders_is_dict(self, client):
+        data = client.get("/api/leaders").get_json()
+        assert isinstance(data["leaders"], dict)

@@ -44,7 +44,7 @@ class TestRankCategory:
 
     def _run(self, owners_data, col, ascending=False):
         """Import and run _rank_category against a synthetic owners dict."""
-        from db.queries import _rank_category
+        from db.queries_standings import _rank_category
         owners = {name: dict(data) for name, data in owners_data.items()}
         _rank_category(owners, col, ascending)
         return owners
@@ -111,16 +111,16 @@ class TestRankCategory:
 class TestGetStatTotals:
     def test_returns_all_seven_owners(self, db_conn):
         insert_sample_logs(db_conn)
-        with patch("db.queries.get_connection", make_get_connection(db_conn)), \
-             patch("db.queries.ALL_OWNERS", ALL_OWNERS):
+        with patch("db.queries_standings.get_connection", make_get_connection(db_conn)), \
+             patch("db.queries_standings.ALL_OWNERS", ALL_OWNERS):
             from db.queries import get_stat_totals
             result = get_stat_totals("2026-04-01", "2026-06-30")
         assert len(result) == 7
 
     def test_inactive_owners_have_zero_stats(self, db_conn):
         insert_sample_logs(db_conn)
-        with patch("db.queries.get_connection", make_get_connection(db_conn)), \
-             patch("db.queries.ALL_OWNERS", ALL_OWNERS):
+        with patch("db.queries_standings.get_connection", make_get_connection(db_conn)), \
+             patch("db.queries_standings.ALL_OWNERS", ALL_OWNERS):
             from db.queries import get_stat_totals
             result = get_stat_totals("2026-04-01", "2026-06-30")
         inactive = [r for r in result if r["fantasy_owner"] in ("Brian", "Mitch", "Russ", "Tim")]
@@ -130,8 +130,8 @@ class TestGetStatTotals:
 
     def test_active_owner_stats_are_summed(self, db_conn):
         insert_sample_logs(db_conn)
-        with patch("db.queries.get_connection", make_get_connection(db_conn)), \
-             patch("db.queries.ALL_OWNERS", ALL_OWNERS):
+        with patch("db.queries_standings.get_connection", make_get_connection(db_conn)), \
+             patch("db.queries_standings.ALL_OWNERS", ALL_OWNERS):
             from db.queries import get_stat_totals
             result = get_stat_totals("2026-04-01", "2026-06-30")
         aaron = next(r for r in result if r["fantasy_owner"] == "Aaron")
@@ -145,9 +145,9 @@ class TestGetStatTotals:
 class TestGetStandings:
     def test_first_place_has_highest_score(self, db_conn):
         insert_sample_logs(db_conn)
-        with patch("db.queries.get_connection", make_get_connection(db_conn)), \
-             patch("db.queries.ALL_OWNERS", ALL_OWNERS), \
-             patch("db.queries.ROTO_CATEGORIES", ROTO_CATEGORIES):
+        with patch("db.queries_standings.get_connection", make_get_connection(db_conn)), \
+             patch("db.queries_standings.ALL_OWNERS", ALL_OWNERS), \
+             patch("db.queries_standings.ROTO_CATEGORIES", ROTO_CATEGORIES):
             from db.queries import get_standings
             result = get_standings("2026-04-01", "2026-06-30")
         scores = [r["total_score"] for r in result]
@@ -155,9 +155,9 @@ class TestGetStandings:
 
     def test_place_1_is_first_row(self, db_conn):
         insert_sample_logs(db_conn)
-        with patch("db.queries.get_connection", make_get_connection(db_conn)), \
-             patch("db.queries.ALL_OWNERS", ALL_OWNERS), \
-             patch("db.queries.ROTO_CATEGORIES", ROTO_CATEGORIES):
+        with patch("db.queries_standings.get_connection", make_get_connection(db_conn)), \
+             patch("db.queries_standings.ALL_OWNERS", ALL_OWNERS), \
+             patch("db.queries_standings.ROTO_CATEGORIES", ROTO_CATEGORIES):
             from db.queries import get_standings
             result = get_standings("2026-04-01", "2026-06-30")
         assert result[0]["place"] == 1
@@ -165,9 +165,9 @@ class TestGetStandings:
 
     def test_all_owners_present(self, db_conn):
         insert_sample_logs(db_conn)
-        with patch("db.queries.get_connection", make_get_connection(db_conn)), \
-             patch("db.queries.ALL_OWNERS", ALL_OWNERS), \
-             patch("db.queries.ROTO_CATEGORIES", ROTO_CATEGORIES):
+        with patch("db.queries_standings.get_connection", make_get_connection(db_conn)), \
+             patch("db.queries_standings.ALL_OWNERS", ALL_OWNERS), \
+             patch("db.queries_standings.ROTO_CATEGORIES", ROTO_CATEGORIES):
             from db.queries import get_standings
             result = get_standings("2026-04-01", "2026-06-30")
         assert len(result) == 7
@@ -194,12 +194,12 @@ class TestGetTrends:
             ("Brian", 4, 20.0), ("Mitch",   5, 15.0), ("Russ", 6, 10.0),
             ("Tim",   7,  5.0),
         ])
-        with patch("db.queries.get_connection", make_get_connection(db_conn)), \
-             patch("db.queries.ALL_OWNERS", ALL_OWNERS), \
-             patch("db.queries.ROTO_CATEGORIES", ROTO_CATEGORIES):
-            from db.queries import get_trends
+        with patch("db.queries_standings.get_connection", make_get_connection(db_conn)), \
+             patch("db.queries_meta.get_connection",      make_get_connection(db_conn)), \
+             patch("db.queries_standings.ALL_OWNERS", ALL_OWNERS), \
+             patch("db.queries_standings.ROTO_CATEGORIES", ROTO_CATEGORIES):
+            from db.queries_meta import get_trends
             trends = get_trends()
-        # Aaron is place 1 in current standings but was 2 in snapshot → up
         assert trends["Aaron"] == "up"
 
     def test_down_when_place_drops(self, db_conn):
@@ -209,19 +209,53 @@ class TestGetTrends:
             ("Brian", 4, 20.0), ("Mitch",   5, 15.0), ("Russ", 6, 10.0),
             ("Tim",   7,  5.0),
         ])
-        with patch("db.queries.get_connection", make_get_connection(db_conn)), \
-             patch("db.queries.ALL_OWNERS", ALL_OWNERS), \
-             patch("db.queries.ROTO_CATEGORIES", ROTO_CATEGORIES):
-            from db.queries import get_trends
+        with patch("db.queries_standings.get_connection", make_get_connection(db_conn)), \
+             patch("db.queries_meta.get_connection",      make_get_connection(db_conn)), \
+             patch("db.queries_standings.ALL_OWNERS", ALL_OWNERS), \
+             patch("db.queries_standings.ROTO_CATEGORIES", ROTO_CATEGORIES):
+            from db.queries_meta import get_trends
             trends = get_trends()
-        # Michael was 1 in snapshot — will be lower in current standings → down
         assert trends["Michael"] == "down"
 
     def test_new_when_no_snapshot_exists(self, db_conn):
         insert_sample_logs(db_conn)
-        with patch("db.queries.get_connection", make_get_connection(db_conn)), \
-             patch("db.queries.ALL_OWNERS", ALL_OWNERS), \
-             patch("db.queries.ROTO_CATEGORIES", ROTO_CATEGORIES):
-            from db.queries import get_trends
+        with patch("db.queries_standings.get_connection", make_get_connection(db_conn)), \
+             patch("db.queries_meta.get_connection",      make_get_connection(db_conn)), \
+             patch("db.queries_standings.ALL_OWNERS", ALL_OWNERS), \
+             patch("db.queries_standings.ROTO_CATEGORIES", ROTO_CATEGORIES):
+            from db.queries_meta import get_trends
             trends = get_trends()
         assert all(v == "new" for v in trends.values())
+
+
+# ── get_last_updated tests ────────────────────────────────────────────────────
+
+class TestGetLastUpdated:
+    def test_returns_dash_when_no_data(self, db_conn):
+        with patch("db.queries_meta.get_connection", make_get_connection(db_conn)):
+            from db.queries_meta import get_last_updated
+            result = get_last_updated()
+        assert result == "—"
+
+    def test_returns_formatted_date_when_data_exists(self, db_conn):
+        insert_sample_logs(db_conn, game_date="2026-04-15")
+        with patch("db.queries_meta.get_connection", make_get_connection(db_conn)):
+            from db.queries_meta import get_last_updated
+            result = get_last_updated()
+        assert result == "Apr 15, 2026"
+
+    def test_returns_most_recent_date(self, db_conn):
+        insert_sample_logs(db_conn, game_date="2026-04-14")
+        insert_sample_logs(db_conn, game_date="2026-04-17", game_id="0052500201")
+        with patch("db.queries_meta.get_connection", make_get_connection(db_conn)):
+            from db.queries_meta import get_last_updated
+            result = get_last_updated()
+        assert result == "Apr 17, 2026"
+
+    def test_no_leading_zero_on_single_digit_day(self, db_conn):
+        insert_sample_logs(db_conn, game_date="2026-04-09")
+        with patch("db.queries_meta.get_connection", make_get_connection(db_conn)):
+            from db.queries_meta import get_last_updated
+            result = get_last_updated()
+        assert result == "Apr 9, 2026"
+        assert " 0" not in result

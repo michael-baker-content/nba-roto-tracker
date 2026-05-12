@@ -23,6 +23,7 @@ from db.queries import (
     get_season_owner_player_totals,
     get_last_updated,
     get_trends,
+    get_season_stat_leaders,
 )
 
 app = Flask(__name__)
@@ -155,8 +156,17 @@ def api_standings():
     })
 
 
-@app.route("/api/totals")
-def api_totals():
+@app.route("/leaders")
+def leaders_page():
+    return render_template("leaders.html", **_common_ctx())
+
+
+@app.route("/api/leaders")
+def api_leaders():
+    return jsonify({
+        **_today_fields(),
+        "leaders": get_season_stat_leaders(),
+    })
     totals = get_season_stat_totals()
     for row in totals:
         row["fg_pct"] = round(row.get("fg_pct", 0) * 100, 1)

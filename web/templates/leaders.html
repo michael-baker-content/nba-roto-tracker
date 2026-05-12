@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Statistical Leaders – Fantasy Basketball</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <div class="header-left">
+            <a href="/" class="site-logo" aria-label="Fantasy Basketball Playoffs home">
+                <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"
+                     aria-hidden="true" focusable="false">
+                    <circle cx="18" cy="18" r="16" fill="#f59e0b" stroke="#fcd34d" stroke-width="1.5"/>
+                    <path d="M18 2C18 2 18 34 18 34" stroke="#92400e" stroke-width="1.5"/>
+                    <path d="M2 18C2 18 34 18 34 18" stroke="#92400e" stroke-width="1.5"/>
+                    <path d="M7 7C7 7 13 14 13 18C13 22 7 29 7 29" stroke="#92400e" stroke-width="1.5" fill="none"/>
+                    <path d="M29 7C29 7 23 14 23 18C23 22 29 29 29 29" stroke="#92400e" stroke-width="1.5" fill="none"/>
+                    <circle cx="18" cy="18" r="16" stroke="#b45309" stroke-width="1.5" fill="none"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="header-title">Statistical Leaders</h1>
+                <p class="header-subtitle">
+                    Top performers &nbsp;·&nbsp;
+                    <a href="/" class="back-link">← Leaderboard</a>
+                </p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="header-meta">
+                <div>Days elapsed <strong>{{ days_elapsed }}</strong></div>
+                <div>Days remaining <strong>{{ days_remaining }}</strong></div>
+            </div>
+            <a href="/leaders" class="leaders-nav-link leaders-nav-active" aria-label="Statistical leaders" aria-current="page">
+                <span class="leaders-nav-crown" aria-hidden="true">👑</span>
+                <span class="leaders-nav-text">Leaders</span>
+            </a>
+            <button class="theme-toggle" id="theme-toggle"
+                    aria-label="Switch to dark mode"
+                    aria-pressed="false">
+                <svg id="icon-sun" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                     aria-hidden="true" focusable="false" style="display:none;">
+                    <path d="M12 4.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 12 4.5zm0 13.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75zM4.5 12a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5A.75.75 0 0 1 4.5 12zm13.5 0a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75zM6.697 7.757a.75.75 0 0 1 1.06-1.06l1.061 1.06a.75.75 0 1 1-1.06 1.061L6.697 7.757zm9.545 9.546a.75.75 0 0 1 1.06-1.06l1.062 1.06a.75.75 0 0 1-1.061 1.061l-1.061-1.061zM7.757 17.303a.75.75 0 0 1-1.06-1.06l1.06-1.062a.75.75 0 0 1 1.061 1.061l-1.061 1.061zm9.546-9.546a.75.75 0 0 1-1.06-1.06l1.06-1.061a.75.75 0 0 1 1.061 1.06l-1.061 1.061zM12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5z"/>
+                </svg>
+                <svg id="icon-moon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                     aria-hidden="true" focusable="false">
+                    <path d="M21.752 15.002A9.718 9.718 0 0 1 18 15.75 9.75 9.75 0 0 1 8.25 6c0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 2.25 12a9.75 9.75 0 0 0 9.75 9.75c4.496 0 8.303-3.04 9.252-7.748z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="page-wrap">
+
+    <div class="status-bar">
+        <div class="status-dot" id="status-dot" aria-hidden="true"></div>
+        <span id="status-msg" aria-live="polite" aria-atomic="true">Loading…</span>
+    </div>
+
+    <div id="leaders-grid" class="leaders-grid">
+        <div class="state-msg">Loading…</div>
+    </div>
+
+</main>
+
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span class="footer-updated">Data through <span id="as-of">—</span></span>
+    </div>
+</footer>
+
+<script>
+const root      = document.documentElement;
+const toggleBtn = document.getElementById('theme-toggle');
+const iconSun   = document.getElementById('icon-sun');
+const iconMoon  = document.getElementById('icon-moon');
+
+function applyTheme(theme, animate) {
+    if (animate) {
+        const rect = toggleBtn.getBoundingClientRect();
+        const x = Math.round(rect.left + rect.width  / 2);
+        const y = Math.round(rect.top  + rect.height / 2);
+        root.style.setProperty('--reveal-x', `${x}px`);
+        root.style.setProperty('--reveal-y', `${y}px`);
+        document.body.classList.remove('theme-revealing');
+        void document.body.offsetWidth;
+        document.body.classList.add('theme-revealing');
+        requestAnimationFrame(() => {
+            root.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            const isDark = theme === 'dark';
+            iconSun.style.display  = isDark  ? 'block' : 'none';
+            iconMoon.style.display = !isDark ? 'block' : 'none';
+            toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+            toggleBtn.setAttribute('aria-pressed', String(isDark));
+        });
+        document.body.addEventListener('animationend', () => {
+            document.body.classList.remove('theme-revealing');
+        }, { once: true });
+        return;
+    }
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    const isDark = theme === 'dark';
+    iconSun.style.display  = isDark  ? 'block' : 'none';
+    iconMoon.style.display = !isDark ? 'block' : 'none';
+    toggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    toggleBtn.setAttribute('aria-pressed', String(isDark));
+}
+
+toggleBtn.addEventListener('click', () => {
+    applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+});
+applyTheme(root.getAttribute('data-theme') || 'light', false);
+
+function buildLeaderCard(category, players, idx) {
+    const isFirst   = idx === 0;
+    const detailId  = `leader-detail-${idx}`;
+    const btnId     = `leader-btn-${idx}`;
+
+    const rows = players.map((p, i) => {
+        const rank = i + 1;
+        const rankClass = rank === 1 ? 'place place-1' : rank === 2 ? 'place place-2' : rank === 3 ? 'place place-3' : 'place place-n';
+        return `<tr>
+            <td><span class="${rankClass}" aria-label="Rank ${rank}">${rank}</span></td>
+            <td class="col-left">
+                <a class="owner-link" href="/owner/${p.fantasy_owner}">${p.player_name}</a>
+                <span class="leader-owner">${p.fantasy_owner}</span>
+            </td>
+            <td class="leader-team">${p.team}</td>
+            <td class="leader-value">${p.display}</td>
+        </tr>`;
+    }).join('');
+
+    const tableHtml = `<table class="leaderboard leader-table">
+        <caption class="sr-only">Top players in ${category}</caption>
+        <thead>
+            <tr>
+                <th style="width:36px;" scope="col">Rank</th>
+                <th class="col-left" scope="col">Player</th>
+                <th style="width:44px;" scope="col">Team</th>
+                <th style="width:60px;" scope="col">Total</th>
+            </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+
+    return `
+    <div class="leader-card">
+        <button class="leader-card-header" id="${btnId}"
+                aria-expanded="${isFirst}"
+                aria-controls="${detailId}">
+            <h2 class="leader-card-title">${category}</h2>
+            <svg class="leader-chevron" viewBox="0 0 20 20" fill="currentColor"
+                 style="transform:${isFirst ? 'rotate(180deg)' : ''}"
+                 aria-hidden="true" focusable="false">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
+            </svg>
+        </button>
+        <div class="leader-card-body" id="${detailId}" ${isFirst ? '' : 'hidden'}>
+            ${tableHtml}
+        </div>
+    </div>`;
+}
+
+function initLeaderAccordions() {
+    document.querySelectorAll('.leader-card-header').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const body    = document.getElementById(btn.getAttribute('aria-controls'));
+            const chevron = btn.querySelector('.leader-chevron');
+            const isOpen  = !body.hidden;
+            body.hidden             = isOpen;
+            chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+            btn.setAttribute('aria-expanded', String(!isOpen));
+        });
+    });
+}
+
+async function loadLeaders() {
+    const grid      = document.getElementById('leaders-grid');
+    const statusMsg = document.getElementById('status-msg');
+    const statusDot = document.getElementById('status-dot');
+
+    try {
+        const resp = await fetch('/api/leaders');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        document.getElementById('as-of').textContent = `${data.last_updated} at ${data.server_time}`;
+
+        const html = Object.entries(data.leaders)
+            .map(([cat, players], idx) => buildLeaderCard(cat, players, idx))
+            .join('');
+
+        grid.innerHTML = html || '<div class="state-msg">No data yet.</div>';
+        initLeaderAccordions();
+        statusMsg.textContent = `Data current as of ${data.last_updated}`;
+        statusDot.style.background = '#059669';
+
+    } catch (err) {
+        grid.innerHTML = `<div class="state-msg">Failed to load: ${err.message}</div>`;
+        statusMsg.textContent = 'Could not load leaders';
+        statusDot.style.background = '#dc2626';
+    }
+}
+
+loadLeaders();
+setInterval(loadLeaders, 60 * 1000);
+</script>
+
+</body>
+</html>

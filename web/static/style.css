@@ -853,3 +853,116 @@ button:focus-visible {
 .mob-score-hidden {
     display: none;
 }
+
+/* ── Leaders page ─────────────────────────────────────────────────────────── */
+.leaders-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.leader-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.leader-card-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1rem 0.5rem;
+    cursor: pointer;
+    text-align: left;
+}
+
+.leader-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.leader-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+/* On desktop: always show all cards expanded, hide chevron */
+@media (min-width: 641px) {
+    .leader-card-header { cursor: default; pointer-events: none; }
+    .leader-chevron     { display: none; }
+    .leader-card-body   { display: block !important; }
+}
+
+.leader-table {
+    min-width: unset;
+    width: 100%;
+}
+
+.leader-owner {
+    display: block;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 1px;
+}
+
+.leader-team {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.leader-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+}
+
+/* ── Leaders nav link ─────────────────────────────────────────────────────── */
+.leaders-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-header);
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    transition: opacity 0.15s;
+    opacity: 0.75;
+}
+
+.leaders-nav-link:hover,
+.leaders-nav-active {
+    opacity: 1;
+}
+
+.leaders-nav-crown {
+    font-size: 16px;
+    line-height: 1;
+    /* Use accent color filter on the emoji via a colored shadow trick */
+    filter: drop-shadow(0 0 0 #EFBF04);
+}
+
+/* On mobile: hide text, show crown only */
+.leaders-nav-text {
+    display: none;
+}
+
+@media (min-width: 641px) {
+    .leaders-nav-text   { display: inline; }
+    .leaders-nav-crown  { display: none; }
+}
