@@ -134,30 +134,31 @@ def get_stat_leaders(start: str, end: str, top_n: int = 5) -> dict:
             for r in rows
         ]
 
-        # ── TO ascending ──────────────────────────────────────────────────────
+        # ── TO per game ascending (threshold matches FG%/FT% for consistency) ──
         rows = conn.execute("""
             SELECT
                 player_name,
                 fantasy_owner,
-                MAX(team)   AS team,
-                COUNT(*)    AS games_played,
-                SUM(to_)    AS total_to
+                MAX(team)                                        AS team,
+                COUNT(*)                                         AS games_played,
+                SUM(to_)                                         AS total_to,
+                CAST(SUM(to_) AS REAL) / NULLIF(COUNT(*), 0)    AS to_per_game
             FROM game_logs
             WHERE game_date BETWEEN :start AND :end
               AND dnp = FALSE
             GROUP BY player_name, fantasy_owner
             HAVING COUNT(*) >= :min_gp
-            ORDER BY total_to ASC
+            ORDER BY to_per_game ASC
             LIMIT :n
         """, {"start": start, "end": end, "min_gp": MIN_GP, "n": top_n}).fetchall()
 
-        result[f"Turnovers{pct_suffix}"] = [
+        result[f"Turnovers per Game{pct_suffix}"] = [
             {
                 "player_name":   r["player_name"],
                 "fantasy_owner": r["fantasy_owner"],
                 "team":          r["team"] or "—",
-                "value":         int(r["total_to"] or 0),
-                "display":       str(int(r["total_to"] or 0)),
+                "value":         round(r["to_per_game"] or 0, 1),
+                "display":       str(round(r["to_per_game"] or 0, 1)),
             }
             for r in rows
         ]
@@ -172,7 +173,7 @@ def get_stat_leaders(start: str, end: str, top_n: int = 5) -> dict:
         "Assists",
         "Steals",
         "Blocks",
-        f"Turnovers{pct_suffix}",
+        f"Turnovers per Game{pct_suffix}",
     ]
     return {k: result[k] for k in ordered_keys if k in result}
 
@@ -180,4 +181,3 @@ def get_stat_leaders(start: str, end: str, top_n: int = 5) -> dict:
 def get_season_stat_leaders() -> dict:
     from config.settings import LEAGUE_START, LEAGUE_END
     return get_stat_leaders(LEAGUE_START, LEAGUE_END)
-

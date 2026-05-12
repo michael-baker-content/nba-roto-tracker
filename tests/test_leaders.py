@@ -94,8 +94,7 @@ class TestGetStatLeaders:
         assert ">4 games played" in fg_key
 
     def test_to_sorts_ascending(self, db_conn):
-        """Turnovers category should list lowest TO totals first."""
-        # Give players different TO counts
+        """Turnovers per game category should list lowest rate first."""
         conn = db_conn
         conn.execute("""
             INSERT INTO game_logs
@@ -113,6 +112,7 @@ class TestGetStatLeaders:
             result = get_stat_leaders("2026-04-01", "2026-06-30")
 
         to_key = next(k for k in result if "Turnover" in k)
+        assert "per Game" in to_key
         players = result[to_key]
         if len(players) >= 2:
             assert players[0]["value"] <= players[1]["value"]
