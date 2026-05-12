@@ -28,6 +28,7 @@ from db.queries import (
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+app.config["JSON_SORT_KEYS"] = False
 
 # ── One-time database initialisation ─────────────────────────────────────────
 # Set INIT_DB=1 in environment variables to run schema creation on startup.
