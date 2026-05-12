@@ -200,8 +200,8 @@ async function loadLeaders() {
 
         document.getElementById('as-of').textContent = `${data.last_updated} at ${data.server_time}`;
 
-        const html = Object.entries(data.leaders)
-            .map(([cat, players], idx) => buildLeaderCard(cat, players, idx))
+        const html = data.leaders
+            .map(({category, players}, idx) => buildLeaderCard(category, players, idx))
             .join('');
 
         grid.innerHTML = html || '<div class="state-msg">No data yet.</div>';

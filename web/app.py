@@ -164,9 +164,16 @@ def leaders_page():
 
 @app.route("/api/leaders")
 def api_leaders():
+    leaders_dict = get_season_stat_leaders()
+    # Return as a list of {category, players} objects rather than a dict
+    # so Flask's JSON serialiser cannot reorder the keys alphabetically.
+    leaders_list = [
+        {"category": cat, "players": players}
+        for cat, players in leaders_dict.items()
+    ]
     return jsonify({
         **_today_fields(),
-        "leaders": get_season_stat_leaders(),
+        "leaders": leaders_list,
     })
     totals = get_season_stat_totals()
     for row in totals:

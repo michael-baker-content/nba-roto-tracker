@@ -143,6 +143,13 @@ class TestLeadersRoutes:
         assert "last_updated" in data
         assert "server_time" in data
 
-    def test_leaders_api_leaders_is_dict(self, client):
+    def test_leaders_api_leaders_is_list(self, client):
         data = client.get("/api/leaders").get_json()
-        assert isinstance(data["leaders"], dict)
+        assert isinstance(data["leaders"], list)
+
+    def test_leaders_api_items_have_category_and_players(self, client):
+        data = client.get("/api/leaders").get_json()
+        if data["leaders"]:
+            item = data["leaders"][0]
+            assert "category" in item
+            assert "players" in item
