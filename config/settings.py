@@ -74,5 +74,4 @@ ROTO_CATEGORIES = [
 # Used by the owner page to gray out players whose teams are no longer playing.
 # Stats for eliminated players still count toward season totals.
 ACTIVE_TEAMS: set = {
-    "CLE", "DET", "LAL", 
-    "MIN", "NYK", "OKC", "PHI", "SAS",}
+    "CLE", "DET", "MIN", "NYK", "OKC", "SAS",}
