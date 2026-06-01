@@ -1,13 +1,11 @@
 """
-db/queries_leaders.py
-─────────────────────
-Statistical leaders queries: top N players per category across the season.
-Used by the leaders page (/leaders).
+db/queries_leaders.py — Statistical leaders (top N players per category).
 
-Counting stats (PTS, FG3M, REB, AST, STL, BLK) are simple cumulative sums.
-Percentage stats (FG%, FT%) and turnovers use a games-played threshold to
-filter out statistical noise. The threshold activates once any player has
-accumulated 6+ games, keeping the page populated early in a new season.
+Counting stats are simple cumulative sums. Percentage stats and turnovers
+use a games-played threshold that activates once any player reaches 6 games,
+keeping the page populated early in a new season.
+
+Category order: PTS → FG% → 3PM → FT% → REB → AST → STL → BLK → TO/game
 """
 
 from db.schema import get_connection
@@ -15,28 +13,19 @@ from db.schema import get_connection
 
 def get_stat_leaders(start: str, end: str, top_n: int = 5) -> dict:
     """
-    Return the top N players in each statistical category.
-
-    Returns a dict keyed by category label, each value a list of dicts:
-        [{"player_name", "fantasy_owner", "team", "value", "display"}, ...]
-    Categories are returned in display order:
-        PTS → FG% → 3PM → FT% → REB → AST → STL → BLK → TO
+    Return top N players per category as an ordered dict.
+    Each value is a list of {player_name, fantasy_owner, team, value, display}.
     """
-    # Check max games played to determine whether to apply the threshold.
-    # Below 6 games, MIN_GP=1 so all players qualify and the page stays useful
-    # early in a new season. At 6+ games, MIN_GP=4 filters statistical noise.
     with get_connection() as conn:
         row = conn.execute("""
             SELECT MAX(gp) AS max_gp FROM (
-                SELECT COUNT(*) AS gp
-                FROM game_logs
+                SELECT COUNT(*) AS gp FROM game_logs
                 WHERE game_date BETWEEN :start AND :end AND dnp = FALSE
                 GROUP BY player_name
             ) sub
         """, {"start": start, "end": end}).fetchone()
     max_gp = row["max_gp"] if row and row["max_gp"] else 0
     MIN_GP = 4 if max_gp >= 6 else 1
-
     pct_suffix = " (>4 games played)" if MIN_GP >= 4 else ""
 
     counting_cats = [
@@ -51,128 +40,61 @@ def get_stat_leaders(start: str, end: str, top_n: int = 5) -> dict:
     result = {}
 
     with get_connection() as conn:
-        # ── Counting stats ────────────────────────────────────────────────────
-        for col_key, col_name, label in counting_cats:
+        for _key, col_name, label in counting_cats:
             rows = conn.execute(f"""
-                SELECT
-                    player_name,
-                    fantasy_owner,
-                    MAX(team)        AS team,
-                    SUM({col_name})  AS total
+                SELECT player_name, fantasy_owner, MAX(team) AS team, SUM({col_name}) AS total
                 FROM game_logs
-                WHERE game_date BETWEEN :start AND :end
-                  AND dnp = FALSE
+                WHERE game_date BETWEEN :start AND :end AND dnp = FALSE
                 GROUP BY player_name, fantasy_owner
-                ORDER BY total DESC
-                LIMIT :n
+                ORDER BY total DESC LIMIT :n
             """, {"start": start, "end": end, "n": top_n}).fetchall()
-
             result[label] = [
-                {
-                    "player_name":   r["player_name"],
-                    "fantasy_owner": r["fantasy_owner"],
-                    "team":          r["team"] or "—",
-                    "value":         int(r["total"] or 0),
-                    "display":       str(int(r["total"] or 0)),
-                }
+                {"player_name": r["player_name"], "fantasy_owner": r["fantasy_owner"],
+                 "team": r["team"] or "—", "value": int(r["total"] or 0),
+                 "display": str(int(r["total"] or 0))}
                 for r in rows
             ]
 
-        # ── FG% ───────────────────────────────────────────────────────────────
+        for col, pct_col, label_base in [
+            ("fgm", "fga", f"Field Goal %{pct_suffix}"),
+            ("ftm", "fta", f"Free Throw %{pct_suffix}"),
+        ]:
+            rows = conn.execute(f"""
+                SELECT player_name, fantasy_owner, MAX(team) AS team,
+                    CAST(SUM({col}) AS REAL) / NULLIF(SUM({pct_col}), 0) AS pct
+                FROM game_logs
+                WHERE game_date BETWEEN :start AND :end AND dnp = FALSE
+                GROUP BY player_name, fantasy_owner
+                HAVING COUNT(*) >= :min_gp
+                ORDER BY pct DESC LIMIT :n
+            """, {"start": start, "end": end, "min_gp": MIN_GP, "n": top_n}).fetchall()
+            result[label_base] = [
+                {"player_name": r["player_name"], "fantasy_owner": r["fantasy_owner"],
+                 "team": r["team"] or "—", "value": round((r["pct"] or 0) * 100, 1),
+                 "display": f"{round((r['pct'] or 0) * 100, 1)}%"}
+                for r in rows
+            ]
+
+        # Turnovers per game — fewer is better
         rows = conn.execute("""
-            SELECT
-                player_name,
-                fantasy_owner,
-                MAX(team)                                    AS team,
-                COUNT(*)                                     AS games_played,
-                CAST(SUM(fgm) AS REAL) / NULLIF(SUM(fga),0) AS fg_pct
+            SELECT player_name, fantasy_owner, MAX(team) AS team,
+                CAST(SUM(to_) AS REAL) / NULLIF(COUNT(*), 0) AS to_pg
             FROM game_logs
-            WHERE game_date BETWEEN :start AND :end
-              AND dnp = FALSE
+            WHERE game_date BETWEEN :start AND :end AND dnp = FALSE
             GROUP BY player_name, fantasy_owner
             HAVING COUNT(*) >= :min_gp
-            ORDER BY fg_pct DESC
-            LIMIT :n
+            ORDER BY to_pg ASC LIMIT :n
         """, {"start": start, "end": end, "min_gp": MIN_GP, "n": top_n}).fetchall()
-
-        result[f"Field Goal %{pct_suffix}"] = [
-            {
-                "player_name":   r["player_name"],
-                "fantasy_owner": r["fantasy_owner"],
-                "team":          r["team"] or "—",
-                "value":         round((r["fg_pct"] or 0) * 100, 1),
-                "display":       f"{round((r['fg_pct'] or 0) * 100, 1)}%",
-            }
-            for r in rows
-        ]
-
-        # ── FT% ───────────────────────────────────────────────────────────────
-        rows = conn.execute("""
-            SELECT
-                player_name,
-                fantasy_owner,
-                MAX(team)                                    AS team,
-                COUNT(*)                                     AS games_played,
-                CAST(SUM(ftm) AS REAL) / NULLIF(SUM(fta),0) AS ft_pct
-            FROM game_logs
-            WHERE game_date BETWEEN :start AND :end
-              AND dnp = FALSE
-            GROUP BY player_name, fantasy_owner
-            HAVING COUNT(*) >= :min_gp
-            ORDER BY ft_pct DESC
-            LIMIT :n
-        """, {"start": start, "end": end, "min_gp": MIN_GP, "n": top_n}).fetchall()
-
-        result[f"Free Throw %{pct_suffix}"] = [
-            {
-                "player_name":   r["player_name"],
-                "fantasy_owner": r["fantasy_owner"],
-                "team":          r["team"] or "—",
-                "value":         round((r["ft_pct"] or 0) * 100, 1),
-                "display":       f"{round((r['ft_pct'] or 0) * 100, 1)}%",
-            }
-            for r in rows
-        ]
-
-        # ── TO per game ascending (threshold matches FG%/FT% for consistency) ──
-        rows = conn.execute("""
-            SELECT
-                player_name,
-                fantasy_owner,
-                MAX(team)                                        AS team,
-                COUNT(*)                                         AS games_played,
-                SUM(to_)                                         AS total_to,
-                CAST(SUM(to_) AS REAL) / NULLIF(COUNT(*), 0)    AS to_per_game
-            FROM game_logs
-            WHERE game_date BETWEEN :start AND :end
-              AND dnp = FALSE
-            GROUP BY player_name, fantasy_owner
-            HAVING COUNT(*) >= :min_gp
-            ORDER BY to_per_game ASC
-            LIMIT :n
-        """, {"start": start, "end": end, "min_gp": MIN_GP, "n": top_n}).fetchall()
-
         result[f"Turnovers per Game{pct_suffix}"] = [
-            {
-                "player_name":   r["player_name"],
-                "fantasy_owner": r["fantasy_owner"],
-                "team":          r["team"] or "—",
-                "value":         round(r["to_per_game"] or 0, 1),
-                "display":       str(round(r["to_per_game"] or 0, 1)),
-            }
+            {"player_name": r["player_name"], "fantasy_owner": r["fantasy_owner"],
+             "team": r["team"] or "—", "value": round(r["to_pg"] or 0, 1),
+             "display": str(round(r["to_pg"] or 0, 1))}
             for r in rows
         ]
 
-    # Return in display order: PTS → FG% → 3PM → FT% → REB → AST → STL → BLK → TO
     ordered_keys = [
-        "Points",
-        f"Field Goal %{pct_suffix}",
-        "3-Pointers Made",
-        f"Free Throw %{pct_suffix}",
-        "Rebounds",
-        "Assists",
-        "Steals",
-        "Blocks",
+        "Points", f"Field Goal %{pct_suffix}", "3-Pointers Made",
+        f"Free Throw %{pct_suffix}", "Rebounds", "Assists", "Steals", "Blocks",
         f"Turnovers per Game{pct_suffix}",
     ]
     return {k: result[k] for k in ordered_keys if k in result}

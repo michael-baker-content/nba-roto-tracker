@@ -11,11 +11,13 @@ Production (Railway):
 """
 
 from datetime import date, datetime
-from flask import Flask, jsonify, render_template, abort
+import os
+import threading
+from flask import Flask, jsonify, render_template, abort, request
 from flask_caching import Cache
 
 from config.roster import ROSTER
-from config.settings import LEAGUE_START, LEAGUE_END, ROTO_CATEGORIES, SECRET_KEY, ACTIVE_TEAMS
+from config.settings import LEAGUE_START, LEAGUE_END, ROTO_CATEGORIES, SECRET_KEY, ACTIVE_TEAMS, ADMIN_TOKEN
 from db.queries import (
     get_season_standings,
     get_season_stat_totals,
@@ -220,6 +222,83 @@ def clear_cache():
     with app.app_context():
         cache.clear()
     print("   🗑️   Flask cache cleared.")
+
+
+# ── Admin pipeline page ───────────────────────────────────────────────────────
+
+# Tracks the current pipeline run state so the admin page can poll for status.
+_pipeline_state = {"running": False, "last_run": None, "last_result": None}
+_pipeline_lock  = threading.Lock()
+
+
+def _run_pipeline(target_date_str: str):
+    """Run the pipeline in a background thread."""
+    from nba.boxscore import build_game_logs
+    from db.store import save_game_logs, save_standings_snapshot
+    from db.queries import get_season_standings
+    from datetime import datetime as dt
+
+    with _pipeline_lock:
+        _pipeline_state["running"] = True
+        _pipeline_state["last_result"] = None
+        _pipeline_state["last_run"] = None
+
+    try:
+        target_date = dt.strptime(target_date_str, "%Y-%m-%d").date()
+        df = build_game_logs(target_date)
+
+        if df.empty:
+            result = f"No games found for {target_date_str}."
+        else:
+            standings = get_season_standings()
+            save_standings_snapshot(standings, target_date)
+            for gid in df["GAME_ID"].unique():
+                save_game_logs(df[df["GAME_ID"] == gid], target_date, str(gid))
+            cache.clear()
+            n_players = len(df)
+            n_owners  = df["Fantasy_Owner"].nunique()
+            result = f"✅ Saved {n_players} player log(s) across {n_owners} owner(s) for {target_date_str}."
+
+    except Exception as exc:
+        result = f"❌ Error: {exc}"
+
+    with _pipeline_lock:
+        _pipeline_state["running"]   = False
+        _pipeline_state["last_run"]  = target_date_str
+        _pipeline_state["last_result"] = result
+
+
+@app.route("/admin")
+def admin_page():
+    token = request.args.get("token", "")
+    if token != ADMIN_TOKEN:
+        abort(404)
+    return render_template("admin.html", token=token,
+                           league_start=LEAGUE_START, league_end=LEAGUE_END,
+                           today=str(date.today()))
+
+
+@app.route("/api/admin/run", methods=["POST"])
+def api_admin_run():
+    token = request.json.get("token", "")
+    if token != ADMIN_TOKEN:
+        abort(404)
+
+    if _pipeline_state["running"]:
+        return jsonify({"status": "running", "message": "Pipeline already running."})
+
+    target_date = request.json.get("date", str(date.today()))
+    thread = threading.Thread(target=_run_pipeline, args=(target_date,), daemon=True)
+    thread.start()
+    return jsonify({"status": "started", "message": f"Pipeline started for {target_date}."})
+
+
+@app.route("/api/admin/status")
+def api_admin_status():
+    token = request.args.get("token", "")
+    if token != ADMIN_TOKEN:
+        abort(404)
+    return jsonify(_pipeline_state)
 
 
 # ── Dev server ────────────────────────────────────────────────────────────────

@@ -1,34 +1,20 @@
 """
-db/queries_standings.py
-───────────────────────
-Rotisserie standings computation: raw stat aggregation, per-category
-ranking, and final leaderboard construction.
+db/queries_standings.py — Rotisserie standings computation.
 
-The two primary public functions are:
+get_stat_totals()  -> raw per-owner stat aggregates
+get_standings()    -> full roto leaderboard sorted by total score
 
-    get_stat_totals()  -> raw per-owner aggregates
-    get_standings()    -> full roto leaderboard, sorted by total score
+All owners always appear in results. Inactive owners receive zero stats and
+share the bottom score (1 point) in every category.
 
-All owners are always present in results, even those with no games played.
-Missing owners receive zero stats and share the bottom score (1 point) in
-every category.
-
-Scoring convention:
-    Best in a category  -> n points  (e.g. 7 in a 7-team league)
-    Worst in a category -> 1 point
-    Tied owners share the average of their tied point values.
-    Inactive owners always share the lowest available point values,
-    regardless of the sort direction of the category.
+Scoring: best = n points, worst = 1 point. Ties share the average of spanned
+values. Inactive owners always share the lowest values regardless of category
+direction — a team with 0 TOs from not playing doesn't deserve the best TO rank.
 """
 
 from config.roster import ROSTER
 from config.settings import ROTO_CATEGORIES
 from db.schema import get_connection
-
-
-# ── Full owner list derived from the roster ───────────────────────────────────
-# Built once at import time. Used to ensure every owner always appears in
-# results even if they have no game logs yet.
 
 ALL_OWNERS: list[str] = sorted({p["Fantasy_Owner"] for p in ROSTER})
 
@@ -36,9 +22,6 @@ _ZERO_STATS: dict = {
     "pts": 0, "fg_pct": 0.0, "ft_pct": 0.0,
     "fg3m": 0, "reb": 0, "ast": 0, "stl": 0, "blk": 0, "to_": 0,
 }
-
-
-# ── Raw aggregates ─────────────────────────────────────────────────────────────
 
 _TOTALS_SQL = """
 SELECT
@@ -58,17 +41,10 @@ WHERE fantasy_owner IN ({placeholders})
   AND dnp = FALSE
 GROUP BY fantasy_owner
 """
-# Note: dnp=FALSE excludes did-not-play rows from all aggregate calculations.
-# A player who did not play should contribute nothing to FG%, REB, etc.
 
 
 def get_stat_totals(start: str, end: str) -> list[dict]:
-    """
-    Return season aggregate stats for every owner between start and end dates.
-
-    Always returns exactly len(ALL_OWNERS) rows. Owners with no game logs in
-    the date range receive zero stats — they are not omitted.
-    """
+    """Return season aggregate stats for every owner. Missing owners get zero stats."""
     placeholders = ", ".join(f":o{i}" for i in range(len(ALL_OWNERS)))
     sql = _TOTALS_SQL.format(placeholders=placeholders)
     params = {"start": start, "end": end}
@@ -78,23 +54,14 @@ def get_stat_totals(start: str, end: str) -> list[dict]:
         rows = conn.execute(sql, params).fetchall()
 
     db_results = {row["fantasy_owner"]: dict(row) for row in rows}
-
     return [
         db_results.get(owner, {"fantasy_owner": owner, **_ZERO_STATS})
         for owner in ALL_OWNERS
     ]
 
 
-# ── Ranking helpers ────────────────────────────────────────────────────────────
-
 def _has_played(owner_data: dict) -> bool:
-    """
-    Return True if this owner has at least one game logged.
-
-    We check multiple stats rather than just pts because a player could
-    theoretically score 0 points while recording rebounds, assists, etc.
-    An owner is considered inactive only if ALL tracked stats are zero.
-    """
+    """True if the owner has at least one game logged (checks multiple stats)."""
     return (
         owner_data.get("pts", 0) > 0
         or owner_data.get("fg3m", 0) > 0
@@ -106,41 +73,16 @@ def _has_played(owner_data: dict) -> bool:
 
 def _rank_category(owners: dict, col: str, ascending: bool):
     """
-    Assign per-category roto points to all owners in-place.
+    Assign roto points for one category to all owners in-place.
 
-    How points are assigned
-    -----------------------
-    Each owner is awarded points from 1 (worst) to n (best), where n is
-    the total number of owners. The best performer gets n points; the
-    worst gets 1.
-
-    Tied owners share the average of the point values they span. For
-    example, two owners tied for 1st place in a 7-team league each receive
-    (7 + 6) / 2 = 6.5 points instead of both getting 7.
-
-    ascending=False (higher is better, e.g. PTS):
-        owner with most points scored -> n roto points
-    ascending=True (lower is better, e.g. TO):
-        owner with fewest turnovers   -> n roto points
-
-    Inactive owners
-    ---------------
-    Owners with no games played are always placed at the bottom, sharing
-    the lowest available point values regardless of category direction.
-    This prevents an inactive owner from receiving the best TO rank simply
-    because 0 turnovers looks like the "fewest" — they haven't played, so
-    they don't deserve credit in any category.
-
-    Modifies owners dict in-place, adding:
-        owners[name][f"{col}_rank"] — float roto points for this category
-        owners[name][col]           — the raw stat value used for ranking
+    Ranks go from 1 (worst) to n (best). Ties share the average of their
+    spanned positions. Inactive owners always share the bottom positions
+    so zero TOs from not playing never earns the best TO rank.
     """
-    db_col = "to_" if col == "TO" else col.lower()
-    n_total = len(owners)
-
+    db_col   = "to_" if col == "TO" else col.lower()
+    n_total  = len(owners)
     active   = [(o, d.get(db_col, 0)) for o, d in owners.items() if _has_played(d)]
     inactive = [(o, d.get(db_col, 0)) for o, d in owners.items() if not _has_played(d)]
-    n_inactive = len(inactive)
 
     active.sort(key=lambda x: x[1], reverse=not ascending)
 
@@ -156,27 +98,14 @@ def _rank_category(owners: dict, col: str, ascending: bool):
         i = j + 1
 
     if inactive:
-        avg_pts = sum(range(1, n_inactive + 1)) / n_inactive
+        avg_pts = sum(range(1, len(inactive) + 1)) / len(inactive)
         for owner_name, val in inactive:
             owners[owner_name][f"{col}_rank"] = avg_pts
             owners[owner_name][col]           = val
 
 
-# ── Rotisserie standings ───────────────────────────────────────────────────────
-
 def get_standings(start: str, end: str) -> list[dict]:
-    """
-    Compute rotisserie standings for all owners over the given date range.
-
-    Steps:
-        1. Aggregate raw stats for every owner (get_stat_totals).
-        2. Rank each owner in each category (_rank_category).
-        3. Sum all category ranks into a total_score.
-        4. Sort by total_score descending and assign place numbers.
-
-    All owners are always present. Owners with no games yet receive zero
-    stats and the minimum points in every category.
-    """
+    """Compute full roto standings. Returns all owners sorted by total score desc."""
     totals = get_stat_totals(start, end)
     owners = {row["fantasy_owner"]: dict(row) for row in totals}
 
@@ -187,18 +116,11 @@ def get_standings(start: str, end: str) -> list[dict]:
     for owner_data in owners.values():
         owner_data["total_score"] = sum(owner_data.get(rc, 0) for rc in rank_cols)
 
-    result = sorted(
-        owners.values(),
-        key=lambda x: (-x["total_score"], x["fantasy_owner"])
-    )
-
+    result = sorted(owners.values(), key=lambda x: (-x["total_score"], x["fantasy_owner"]))
     for i, row in enumerate(result, start=1):
         row["place"] = i
-
     return result
 
-
-# ── Season wrappers ───────────────────────────────────────────────────────────
 
 def get_season_standings() -> list[dict]:
     from config.settings import LEAGUE_START, LEAGUE_END

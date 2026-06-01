@@ -70,7 +70,13 @@
     </div>
 
     <!-- Season totals -->
-    <h2 class="section-heading">Season totals</h2>
+    <div class="section-toggle-header">
+        <h2 class="section-heading" style="margin-bottom:0;">Season totals</h2>
+        <button class="section-toggle-btn" id="hide-eliminated-btn"
+                aria-pressed="false">
+            <span id="hide-eliminated-label">Hide eliminated</span>
+        </button>
+    </div>
     <div class="table-wrap" style="margin-bottom:2rem;">
         <table class="leaderboard" id="totals-table">
             <caption class="sr-only">Season cumulative statistics for each rostered player on Team {{ owner }}</caption>
@@ -78,13 +84,24 @@
                 <tr>
                     <th class="col-left" style="width:160px;" scope="col">Player</th>
                     <th style="width:44px;" scope="col">Team</th>
-                    <th style="width:44px;" scope="col">GP</th>
-                    <th scope="col">PTS</th>
-                    <th scope="col">FGM</th><th scope="col">FGA</th><th scope="col">FG%</th>
-                    <th scope="col">3PM</th><th scope="col">3PA</th><th scope="col">3P%</th>
-                    <th scope="col">FTM</th><th scope="col">FTA</th><th scope="col">FT%</th>
-                    <th scope="col">OREB</th><th scope="col">DREB</th><th scope="col">REB</th>
-                    <th scope="col">AST</th><th scope="col">STL</th><th scope="col">BLK</th><th scope="col">TO</th>
+                    <th class="owner-sortable" data-key="games_played" style="width:44px;" scope="col">GP <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="pts" scope="col">PTS <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="fgm" scope="col">FGM <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="fga" scope="col">FGA <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="fg_pct" scope="col">FG% <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="fg3m" scope="col">3PM <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="fg3a" scope="col">3PA <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="fg3_pct" scope="col">3P% <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="ftm" scope="col">FTM <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="fta" scope="col">FTA <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="ft_pct" scope="col">FT% <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="oreb" scope="col">OREB <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="dreb" scope="col">DREB <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="reb" scope="col">REB <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="ast" scope="col">AST <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="stl" scope="col">STL <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="blk" scope="col">BLK <span class="sort-indicator"></span></th>
+                    <th class="owner-sortable" data-key="to_" scope="col">TO <span class="sort-indicator"></span></th>
                 </tr>
             </thead>
             <tbody id="totals-body">
@@ -101,15 +118,21 @@
     <!-- Game log -->
     <div class="section-toggle-header">
         <h2 class="section-heading" style="margin-bottom:0;">Game log</h2>
-        <button class="section-toggle-btn" id="log-toggle-btn"
-                aria-expanded="false" aria-controls="log-section">
-            <span id="log-toggle-label">Show</span>
-            <svg id="log-toggle-icon" viewBox="0 0 20 20" fill="currentColor"
-                 style="width:14px;height:14px;transition:transform 0.2s;"
-                 aria-hidden="true" focusable="false">
-                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
-            </svg>
-        </button>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+            <button class="section-toggle-btn" id="hide-dnp-btn"
+                    aria-pressed="false" hidden>
+                <span id="hide-dnp-label">Hide DNP</span>
+            </button>
+            <button class="section-toggle-btn" id="log-toggle-btn"
+                    aria-expanded="false" aria-controls="log-section">
+                <span id="log-toggle-label">Show</span>
+                <svg id="log-toggle-icon" viewBox="0 0 20 20" fill="currentColor"
+                     style="width:14px;height:14px;transition:transform 0.2s;"
+                     aria-hidden="true" focusable="false">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
+                </svg>
+            </button>
+        </div>
     </div>
     <div id="log-section" class="collapsible-section" hidden>
         <div class="table-wrap">
@@ -117,15 +140,26 @@
                 <caption class="sr-only">Individual game log for each player on Team {{ owner }}</caption>
                 <thead>
                     <tr>
-                        <th class="col-left" style="width:90px;" scope="col">Date</th>
-                        <th class="col-left" style="width:150px;" scope="col">Player</th>
+                        <th class="col-left owner-sortable" data-key="game_date" style="width:90px;" scope="col">Date <span class="sort-indicator">▼</span></th>
+                        <th class="col-left owner-sortable" data-key="player_name" style="width:150px;" scope="col">Player <span class="sort-indicator"></span></th>
                         <th style="width:50px;" scope="col">OPP</th>
-                        <th scope="col">PTS</th>
-                        <th scope="col">FGM</th><th scope="col">FGA</th><th scope="col">FG%</th>
-                        <th scope="col">3PM</th><th scope="col">3PA</th><th scope="col">3P%</th>
-                        <th scope="col">FTM</th><th scope="col">FTA</th><th scope="col">FT%</th>
-                        <th scope="col">OREB</th><th scope="col">DREB</th><th scope="col">REB</th>
-                        <th scope="col">AST</th><th scope="col">STL</th><th scope="col">BLK</th><th scope="col">TO</th>
+                        <th class="owner-sortable" data-key="pts" scope="col">PTS <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="fgm" scope="col">FGM <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="fga" scope="col">FGA <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="fg_pct" scope="col">FG% <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="fg3m" scope="col">3PM <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="fg3a" scope="col">3PA <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="fg3_pct" scope="col">3P% <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="ftm" scope="col">FTM <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="fta" scope="col">FTA <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="ft_pct" scope="col">FT% <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="oreb" scope="col">OREB <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="dreb" scope="col">DREB <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="reb" scope="col">REB <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="ast" scope="col">AST <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="stl" scope="col">STL <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="blk" scope="col">BLK <span class="sort-indicator"></span></th>
+                        <th class="owner-sortable" data-key="to_" scope="col">TO <span class="sort-indicator"></span></th>
                     </tr>
                 </thead>
                 <tbody id="log-body">
@@ -285,6 +319,113 @@ function buildLogRow(r) {
     </tr>`;
 }
 
+// ── State ─────────────────────────────────────────────────────────────────────
+let hideInactive  = false;
+let hideDnp       = false;
+let cachedTotals  = [];
+let cachedLogs    = [];
+
+let totalsSort = { key: null, dir: 'desc' };
+let logSort    = { key: 'game_date', dir: 'desc' };
+
+// ── Season totals hide-eliminated toggle ─────────────────────────────────────
+document.getElementById('hide-eliminated-btn').addEventListener('click', () => {
+    hideInactive = !hideInactive;
+    const btn = document.getElementById('hide-eliminated-btn');
+    btn.setAttribute('aria-pressed', String(hideInactive));
+    document.getElementById('hide-eliminated-label').textContent =
+        hideInactive ? 'Show eliminated' : 'Hide eliminated';
+    renderTotals();
+});
+
+// ── Hide DNP toggle ───────────────────────────────────────────────────────────
+document.getElementById('hide-dnp-btn').addEventListener('click', () => {
+    hideDnp = !hideDnp;
+    const btn = document.getElementById('hide-dnp-btn');
+    btn.setAttribute('aria-pressed', String(hideDnp));
+    document.getElementById('hide-dnp-label').textContent =
+        hideDnp ? 'Show DNP' : 'Hide DNP';
+    renderLogs();
+});
+
+// ── Sort helpers ──────────────────────────────────────────────────────────────
+function sortRows(rows, key, dir) {
+    return [...rows].sort((a, b) => {
+        let va = a[key] ?? (typeof a[key] === 'number' ? -Infinity : '');
+        let vb = b[key] ?? (typeof b[key] === 'number' ? -Infinity : '');
+        if (typeof va === 'string') return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+        return dir === 'asc' ? va - vb : vb - va;
+    });
+}
+
+function updateSortIndicators(tableId, activeKey, activeDir) {
+    document.querySelectorAll(`#${tableId} .owner-sortable`).forEach(th => {
+        const ind = th.querySelector('.sort-indicator');
+        if (!ind) return;
+        if (th.dataset.key === activeKey) {
+            ind.textContent = activeDir === 'asc' ? '▲' : '▼';
+            th.classList.add('sort-active-header');
+        } else {
+            ind.textContent = '';
+            th.classList.remove('sort-active-header');
+        }
+    });
+}
+
+// ── Render totals ─────────────────────────────────────────────────────────────
+function renderTotals() {
+    const activeTeams = window._activeTeams || [];
+    let rows = hideInactive
+        ? cachedTotals.filter(r => !r.team || activeTeams.includes(r.team))
+        : cachedTotals;
+    if (totalsSort.key) rows = sortRows(rows, totalsSort.key, totalsSort.dir);
+    const totalsBody = document.getElementById('totals-body');
+    totalsBody.innerHTML = rows.length === 0
+        ? '<tr><td colspan="20" class="state-msg">No data yet.</td></tr>'
+        : rows.map(r => buildTotalsRow(r, activeTeams)).join('') + buildTotalsFooter(cachedTotals);
+    updateSortIndicators('totals-table', totalsSort.key, totalsSort.dir);
+    updateTableScrollState();
+}
+
+// ── Render logs ───────────────────────────────────────────────────────────────
+function renderLogs() {
+    let rows = hideDnp ? cachedLogs.filter(r => !r.dnp) : cachedLogs;
+    rows = sortRows(rows, logSort.key, logSort.dir);
+    const logBody = document.getElementById('log-body');
+    logBody.innerHTML = rows.length === 0
+        ? '<tr><td colspan="20" class="state-msg">No games played yet.</td></tr>'
+        : rows.map(buildLogRow).join('');
+    updateSortIndicators('log-table', logSort.key, logSort.dir);
+    updateTableScrollState();
+}
+
+// ── Column sort click handlers ────────────────────────────────────────────────
+document.querySelectorAll('#totals-table .owner-sortable').forEach(th => {
+    th.addEventListener('click', () => {
+        const key = th.dataset.key;
+        if (totalsSort.key === key) {
+            totalsSort.dir = totalsSort.dir === 'desc' ? 'asc' : 'desc';
+        } else {
+            totalsSort.key = key;
+            totalsSort.dir = 'desc';
+        }
+        renderTotals();
+    });
+});
+
+document.querySelectorAll('#log-table .owner-sortable').forEach(th => {
+    th.addEventListener('click', () => {
+        const key = th.dataset.key;
+        if (logSort.key === key) {
+            logSort.dir = logSort.dir === 'desc' ? 'asc' : 'desc';
+        } else {
+            logSort.key = key;
+            logSort.dir = key === 'game_date' ? 'desc' : 'desc';
+        }
+        renderLogs();
+    });
+});
+
 async function loadOwnerData() {
     const owner     = {{ owner | tojson }};
     const statusMsg = document.getElementById('status-msg');
@@ -297,19 +438,11 @@ async function loadOwnerData() {
 
         document.getElementById('as-of').textContent = `${data.last_updated} at ${data.server_time}`;
 
-        const activeTeams = data.active_teams || [];
-        const totalsBody = document.getElementById('totals-body');
-        if (data.player_totals.length === 0) {
-            totalsBody.innerHTML = '<tr><td colspan="20" class="state-msg">No data yet.</td></tr>';
-        } else {
-            totalsBody.innerHTML = data.player_totals.map(r => buildTotalsRow(r, activeTeams)).join('')
-                + buildTotalsFooter(data.player_totals);
-        }
-
-        const logBody = document.getElementById('log-body');
-        logBody.innerHTML = data.game_logs.length === 0
-            ? '<tr><td colspan="20" class="state-msg">No games played yet.</td></tr>'
-            : data.game_logs.map(buildLogRow).join('');
+        window._activeTeams = data.active_teams || [];
+        cachedTotals = data.player_totals;
+        cachedLogs   = data.game_logs;
+        renderTotals();
+        renderLogs();
 
         statusMsg.textContent = `Data current as of ${data.last_updated}`;
         statusDot.style.background = '#059669';
@@ -324,7 +457,6 @@ async function loadOwnerData() {
     }
 }
 
-// ── Game log toggle ───────────────────────────────────────────────────────────
 const logToggleBtn   = document.getElementById('log-toggle-btn');
 const logSection     = document.getElementById('log-section');
 const logToggleLabel = document.getElementById('log-toggle-label');
@@ -336,6 +468,7 @@ logToggleBtn.addEventListener('click', () => {
     logToggleLabel.textContent    = isOpen ? 'Show' : 'Hide';
     logToggleIcon.style.transform = isOpen ? '' : 'rotate(180deg)';
     logToggleBtn.setAttribute('aria-expanded', String(!isOpen));
+    document.getElementById('hide-dnp-btn').hidden = isOpen;
 });
 
 // ── Table scroll state ────────────────────────────────────────────────────────

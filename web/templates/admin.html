@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Pipeline Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <script>
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) document.documentElement.setAttribute('data-theme', saved);
+        })();
+    </script>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <div class="header-left">
+            <a href="/" class="site-logo" aria-label="Home">
+                <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"
+                     aria-hidden="true" focusable="false">
+                    <circle cx="18" cy="18" r="16" fill="#f59e0b" stroke="#fcd34d" stroke-width="1.5"/>
+                    <path d="M18 2C18 2 18 34 18 34" stroke="#92400e" stroke-width="1.5"/>
+                    <path d="M2 18C2 18 34 18 34 18" stroke="#92400e" stroke-width="1.5"/>
+                    <path d="M7 7C7 7 13 14 13 18C13 22 7 29 7 29" stroke="#92400e" stroke-width="1.5" fill="none"/>
+                    <path d="M29 7C29 7 23 14 23 18C23 22 29 29 29 29" stroke="#92400e" stroke-width="1.5" fill="none"/>
+                    <circle cx="18" cy="18" r="16" stroke="#b45309" stroke-width="1.5" fill="none"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="header-title">Pipeline Admin</h1>
+                <p class="header-subtitle"><a href="/" class="back-link">← Leaderboard</a></p>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="page-wrap" style="max-width: 480px;">
+
+    <div class="admin-card">
+        <h2 class="section-heading">Run Pipeline</h2>
+
+        <div class="admin-row">
+            <label for="run-date" class="admin-label">Date</label>
+            <input type="date" id="run-date" class="admin-date-input"
+                   min="{{ league_start }}" max="{{ league_end }}"
+                   value="{{ today }}">
+        </div>
+
+        <button id="run-btn" class="admin-run-btn" onclick="runPipeline()">
+            Run Pipeline
+        </button>
+
+        <div id="status-area" class="admin-status" hidden></div>
+    </div>
+
+</main>
+
+<footer class="site-footer">
+    <div class="site-footer-inner">
+        <span class="footer-updated">Admin access only</span>
+    </div>
+</footer>
+
+<script>
+const TOKEN = {{ token | tojson }};
+const TODAY = new Date().toISOString().split('T')[0];
+document.getElementById('run-date').value = TODAY;
+
+let pollInterval = null;
+
+async function runPipeline() {
+    const dateVal   = document.getElementById('run-date').value;
+    const btn       = document.getElementById('run-btn');
+    const statusArea = document.getElementById('status-area');
+
+    btn.disabled = true;
+    btn.textContent = 'Starting…';
+    statusArea.hidden = false;
+    statusArea.className = 'admin-status admin-status-running';
+    statusArea.textContent = `Starting pipeline for ${dateVal}…`;
+
+    try {
+        const resp = await fetch('/api/admin/run', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({token: TOKEN, date: dateVal})
+        });
+        const data = await resp.json();
+
+        if (data.status === 'running') {
+            statusArea.textContent = 'Pipeline already running — please wait.';
+            btn.disabled = false;
+            btn.textContent = 'Run Pipeline';
+            return;
+        }
+
+        // Poll for completion
+        pollInterval = setInterval(pollStatus, 2000);
+
+    } catch (err) {
+        statusArea.className = 'admin-status admin-status-error';
+        statusArea.textContent = `Error: ${err.message}`;
+        btn.disabled = false;
+        btn.textContent = 'Run Pipeline';
+    }
+}
+
+async function pollStatus() {
+    try {
+        const resp = await fetch(`/api/admin/status?token=${TOKEN}`);
+        const data = await resp.json();
+        const statusArea = document.getElementById('status-area');
+        const btn = document.getElementById('run-btn');
+
+        if (data.running) {
+            statusArea.textContent = 'Pipeline running…';
+            return;
+        }
+
+        // Still waiting for result to be written
+        if (!data.last_result) {
+            return;
+        }
+
+        // Done
+        clearInterval(pollInterval);
+        pollInterval = null;
+        btn.disabled = false;
+        btn.textContent = 'Run Pipeline';
+
+        const isError = data.last_result.startsWith('❌');
+        statusArea.className = `admin-status ${isError ? 'admin-status-error' : 'admin-status-success'}`;
+        statusArea.textContent = data.last_result;
+
+    } catch (err) {
+        clearInterval(pollInterval);
+        document.getElementById('status-area').textContent = `Poll error: ${err.message}`;
+    }
+}
+</script>
+
+</body>
+</html>
