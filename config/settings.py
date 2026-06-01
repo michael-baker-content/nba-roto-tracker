@@ -40,6 +40,5 @@ ROTO_CATEGORIES = [
 ]
 
 ACTIVE_TEAMS: set = {
-    "ATL", "BOS", "CLE", "DEN", "DET",
-    "HOU", "LAL", "MIN", "NYK", "OKC", "ORL", "PHI", "SAS", "TOR",
+    "NYK", "SAS",
 }
