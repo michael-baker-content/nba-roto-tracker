@@ -67,8 +67,9 @@ def get_owner_player_totals(owner: str, start: str, end: str) -> list[dict]:
         if player in db_results:
             result.append(db_results[player])
         else:
+            roster_team = next((p["TEAM"] for p in ROSTER if p["PLAYER"] == player), None)
             result.append({
-                "player_name": player, "team": None, "games_played": 0,
+                "player_name": player, "team": roster_team, "games_played": 0,
                 "pts": 0, "fgm": 0, "fga": 0, "fg_pct": 0.0,
                 "fg3m": 0, "fg3a": 0, "fg3_pct": 0.0,
                 "ftm": 0, "fta": 0, "ft_pct": 0.0,
