@@ -11,6 +11,7 @@ Production (Railway):
 """
 
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
 import os
 import threading
 from flask import Flask, jsonify, render_template, abort, request
@@ -99,8 +100,8 @@ def _today_fields() -> dict:
         "as_of":         str(today),
         "today_display": today.strftime("%b %d, %Y").replace(" 0", " "),
         "last_updated":  get_last_updated(),
-        "server_time":   datetime.now().strftime("%I:%M %p").lstrip("0"),
-    }
+        "server_time":   datetime.now(ZoneInfo("America/Los_Angeles")).strftime("%I:%M %p").lstrip("0"),
+            }
 
 
 # ── HTML routes ───────────────────────────────────────────────────────────────
