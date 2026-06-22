@@ -2,7 +2,7 @@
 
 A self-hosted fantasy basketball playoff tracker with a live leaderboard, per-team roster pages, and rotisserie standings. Built with Python, Flask, and SQLite (PostgreSQL in production).
 
-**Live demo:** [web-production-36aa6.up.railway.app](https://web-production-36aa6.up.railway.app/)
+Update: Now that the season is over and database calls are no longer required, I've migrated the final state of the site from Railway to [Python Anywhere](https://michaelbaker.pythonanywhere.com).
 
 ---
 
